@@ -24,15 +24,18 @@ void CSoundRender_Emitter::start(ref_sound* _owner, BOOL _loop, float delay)
 		state				= _loop?stStartingLooped:stStarting;
     }else{
 		state				= _loop?stStartingLoopedDelayed:stStartingDelayed;
-    }
+		dwTimeToPropagade	= SoundRender->Timer.GetElapsed_ms();
+	}
 	bStopping				=	FALSE;
+	bRewind					=	FALSE;
 }
 
 void CSoundRender_Emitter::i_stop()
 {
+	bRewind					=	FALSE;
 	if (target)	SoundRender->i_stop		(this);
 	if (owner_data){
-		Event_ReleaseOwner		();
+		Event_ReleaseOwner		(); 
 		VERIFY(this==owner_data->feedback);
 		owner_data->feedback	= NULL;
 		owner_data				= NULL;
@@ -57,7 +60,18 @@ void CSoundRender_Emitter::rewind()
 	dwTimeToPropagade			=	dwTime;
 
 	position					=	0;
-	if (target)	SoundRender->i_rewind	(this);
+	bRewind						=	TRUE;
+}
+
+void CSoundRender_Emitter::pause(BOOL bVal, int id)
+{
+	if (bVal){
+//.		Log("iPaused",iPaused);
+		if (0==iPaused)	iPaused	= id;
+	}else{
+//.		Log("iPaused",iPaused);
+		if (id==iPaused)iPaused	= 0;
+	}
 }
 
 void CSoundRender_Emitter::cancel()
@@ -76,7 +90,7 @@ void CSoundRender_Emitter::cancel()
 		SoundRender->i_stop		(this);
 		break;
 	default:
-		Debug.fatal	("Non playing ref_sound forced out of render queue");
+		Debug.fatal					("Non playing ref_sound forced out of render queue");
 		break;
 	}
 }

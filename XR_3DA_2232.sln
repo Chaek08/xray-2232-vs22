@@ -19,8 +19,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xrRender_R2", "xr_3da\xrRen
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xrXMLParser", "xrXMLParser\xrXMLParser.vcxproj", "{94A1C366-3D19-48E6-8170-4ADC2E70DF98}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xrLUA", "xrLUA\xrLUA.vcxproj", "{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ode", "xrODE\contrib\msvc7\ode_default\default.vcxproj", "{1BF75FEB-87DD-486C-880B-227987D191C2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xrParticles", "xrParticles\xrParticles.vcxproj", "{94A1C366-3D19-48E6-8170-4ADC2E70DF97}"
@@ -35,6 +33,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xrCDB", "xrCDB\xrCDB.vcxpro
 	ProjectSection(ProjectDependencies) = postProject
 		{A0F7D1FB-59A7-4717-A7E4-96F37E91998E} = {A0F7D1FB-59A7-4717-A7E4-96F37E91998E}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xrLUA_JIT", "xrLUA_JIT\xrLUA_JIT.vcxproj", "{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -102,13 +102,6 @@ Global
 		{94A1C366-3D19-48E6-8170-4ADC2E70DF98}.Mixed|x86.Build.0 = Mixed|Win32
 		{94A1C366-3D19-48E6-8170-4ADC2E70DF98}.Release|x86.ActiveCfg = Release|Win32
 		{94A1C366-3D19-48E6-8170-4ADC2E70DF98}.Release|x86.Build.0 = Release|Win32
-		{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}.Debug|x86.ActiveCfg = Debug|Win32
-		{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}.Debug|x86.Build.0 = Debug|Win32
-		{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}.DebugNoExceptions|x86.ActiveCfg = Debug|Win32
-		{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}.Mixed|x86.ActiveCfg = Mixed|Win32
-		{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}.Mixed|x86.Build.0 = Mixed|Win32
-		{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}.Release|x86.ActiveCfg = Release|Win32
-		{F496E4E3-22D5-4294-A0FB-A1EFDA7E2450}.Release|x86.Build.0 = Release|Win32
 		{1BF75FEB-87DD-486C-880B-227987D191C2}.Debug|x86.ActiveCfg = Debug|Win32
 		{1BF75FEB-87DD-486C-880B-227987D191C2}.Debug|x86.Build.0 = Debug|Win32
 		{1BF75FEB-87DD-486C-880B-227987D191C2}.DebugNoExceptions|x86.ActiveCfg = Debug|Win32
@@ -155,6 +148,14 @@ Global
 		{A19B1DF2-82EC-4364-8BDF-85D13A1C89B5}.Mixed|x86.Build.0 = Mixed|Win32
 		{A19B1DF2-82EC-4364-8BDF-85D13A1C89B5}.Release|x86.ActiveCfg = Release|Win32
 		{A19B1DF2-82EC-4364-8BDF-85D13A1C89B5}.Release|x86.Build.0 = Release|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.Debug|x86.ActiveCfg = Debug|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.Debug|x86.Build.0 = Debug|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.DebugNoExceptions|x86.ActiveCfg = Debug|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.DebugNoExceptions|x86.Build.0 = Debug|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.Mixed|x86.ActiveCfg = Mixed|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.Mixed|x86.Build.0 = Mixed|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.Release|x86.ActiveCfg = Release|Win32
+		{9ACE5473-6D68-4B96-AC42-B39EABA0FE1F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

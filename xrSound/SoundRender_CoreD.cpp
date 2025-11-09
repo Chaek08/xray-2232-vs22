@@ -3,6 +3,7 @@
 
 #include "soundrender_coreD.h"
 #include "soundrender_targetD.h"
+#include <eax.h>
 
 CSoundRender_CoreD*	SoundRenderD= 0;
 
@@ -160,7 +161,7 @@ void CSoundRender_CoreD::_initialize	(u64 window)
 	}
 }
 
-void CSoundRender_CoreD::set_volume(float f )
+void CSoundRender_CoreD::set_master_volume(float f )
 {
 	if		(pBuffer)	
 	{

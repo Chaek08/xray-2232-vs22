@@ -38,7 +38,7 @@ BOOL CSoundRender_TargetD::_initialize	()
 		DSBCAPS_CTRLFREQUENCY | 
 		DSBCAPS_CTRLVOLUME |
 		DSBCAPS_GETCURRENTPOSITION2 |
-		(psSoundFlags.test(ssHardware) 	? 0 				: (DSBCAPS_LOCSOFTWARE));
+		(psSoundFlags.test(ss_Hardware) 	? 0 				: (DSBCAPS_LOCSOFTWARE));
 	dsBD.dwBufferBytes		= buf_size;
 	dsBD.dwReserved			= 0;
 	dsBD.lpwfxFormat		= &wfx;
@@ -49,9 +49,9 @@ BOOL CSoundRender_TargetD::_initialize	()
 	case sq_NOVIRT:		dsBD.guid3DAlgorithm = DS3DALG_NO_VIRTUALIZATION; 	break;
 	case sq_LIGHT:		dsBD.guid3DAlgorithm = DS3DALG_HRTF_LIGHT;			break;
 	case sq_HIGH:		dsBD.guid3DAlgorithm = DS3DALG_HRTF_FULL;			break;
-	default:			Debug.fatal("Unknown 3D-ref_sound algorithm");		break;
+	default:			Debug.fatal("Unknown 3D-ref_sound algorithm");			break;
 	}
-    if (psSoundFlags.test(ssHardware)) 
+    if (psSoundFlags.test(ss_Hardware)) 
     	dsBD.guid3DAlgorithm = DS3DALG_HRTF_FULL;
 
 	// Create
@@ -102,7 +102,8 @@ void	CSoundRender_TargetD::stop			()
 {
 	if (rendering){
 		R_CHK		(pBuffer->Stop());
-		R_CHK		(pControl->SetMode(DS3DMODE_DISABLE,DS3D_DEFERRED));
+		R_CHK		(pControl->SetMode(DS3DMODE_HEADRELATIVE,DS3D_DEFERRED));
+//		R_CHK		(pControl->SetMode(DS3DMODE_DISABLE,DS3D_DEFERRED));
 	}
     inherited::stop	();
 }
@@ -153,7 +154,8 @@ void	CSoundRender_TargetD::fill_parameters()
 	// 1. Set 3D params (including mode)
 	{
 		Fvector&			p_pos	= pEmitter->p_source.position;
-		R_CHK(pControl->SetMode			(pEmitter->b2D ? DS3DMODE_DISABLE : DS3DMODE_NORMAL,DS3D_DEFERRED));
+
+		R_CHK(pControl->SetMode			(pEmitter->b2D ? DS3DMODE_HEADRELATIVE : DS3DMODE_NORMAL,DS3D_DEFERRED));
 		R_CHK(pControl->SetMinDistance	(pEmitter->p_source.min_distance,	DS3D_DEFERRED));
 		R_CHK(pControl->SetMaxDistance	(pEmitter->p_source.max_distance,	DS3D_DEFERRED));
 		R_CHK(pControl->SetPosition		(p_pos.x,p_pos.y,p_pos.z,			DS3D_DEFERRED));

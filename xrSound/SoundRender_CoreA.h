@@ -4,9 +4,12 @@
 
 #include "SoundRender_Core.h"            
 
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <AL/alut.h>
+#include <al.h>
+#include <alc.h>
+#include <alut.h>
+#include <eax.h>
+
+#include "OpenALDeviceList.h"
 
 #ifdef DEBUG
 #	define A_CHK(expr)		{ alGetError(); 		expr; ALenum error=alGetError(); 			VERIFY2(error==AL_NO_ERROR, (LPCSTR)alGetString(error)); }
@@ -16,17 +19,14 @@
 #	define AC_CHK(expr)		{ expr; }
 #endif
 
-// temorary patch
-typedef ALenum    __cdecl EAXGet(const struct _GUID *propertySetID,ALuint property,ALuint source,ALvoid *value,ALuint size);
-typedef ALenum    __cdecl EAXSet(const struct _GUID *propertySetID,ALuint property,ALuint source,ALvoid *value,ALuint size);
-
 class CSoundRender_CoreA: public CSoundRender_Core
 {
 	typedef CSoundRender_Core inherited;
-	EAXSet*					eaxSet;					// EAXSet function, retrieved if EAX Extension is supported
-	EAXGet*					eaxGet;					// EAXGet function, retrieved if EAX Extension is supported
+	EAXSet					eaxSet;					// EAXSet function, retrieved if EAX Extension is supported
+	EAXGet					eaxGet;					// EAXGet function, retrieved if EAX Extension is supported
 	ALCdevice* 				pDevice;
     ALCcontext*				pContext;
+	ALDeviceList*			pDeviceList;
 
 	struct SListener{
 		Fvector				position;
@@ -47,7 +47,7 @@ public:
 	virtual void			_initialize				( u64 window );
 	virtual void			_clear					( );
     
-	virtual void			set_volume				( float f		);
+	virtual void			set_master_volume		( float f		);
 
 	virtual const Fvector&	listener_position		( ){return Listener.position;}
 };

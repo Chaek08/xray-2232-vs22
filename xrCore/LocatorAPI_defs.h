@@ -34,7 +34,7 @@ public:
 	void		_update		(xr_string& dest, LPCSTR src) const;
 	void		_set		(LPSTR add);
 
-    void __stdcall rescan_path_cb	();
+    void		 rescan_path_cb	();
 };
 
 #ifdef _EDITOR

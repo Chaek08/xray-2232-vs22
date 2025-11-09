@@ -44,13 +44,14 @@
 				WarningLevel="4"
 				SuppressStartupBanner="TRUE"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"
-				CallingConvention="2"/>
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="TRUE"
+				AdditionalOptions="/NODEFAULTLIB:LIBCMTD"
+				AdditionalDependencies="vorbisfile_static_d.lib ogg_static_d.lib OpenAL32.lib"
 				OutputFile="$(OutDir)/xrSound.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
@@ -86,7 +87,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="x:\"
-			IntermediateDirectory="Release"
+			IntermediateDirectory=".\Release"
 			ConfigurationType="2"
 			CharacterSet="2"
 			WholeProgramOptimization="TRUE">
@@ -105,6 +106,7 @@
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
+				EnableEnhancedInstructionSet="1"
 				RuntimeTypeInfo="TRUE"
 				UsePrecompiledHeader="3"
 				AssemblerOutput="0"
@@ -113,12 +115,12 @@
 				BrowseInformation="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"
-				CallingConvention="2"/>
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="vorbisfile_static.lib ogg_static.lib OpenAL32.lib"
 				OutputFile="$(OutDir)/xrSound.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
@@ -153,14 +155,13 @@
 		<Configuration
 			Name="Mixed|Win32"
 			OutputDirectory="x:\"
-			IntermediateDirectory="Mixed"
+			IntermediateDirectory=".\Mixed"
 			ConfigurationType="2"
 			CharacterSet="2"
 			WholeProgramOptimization="FALSE">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
-				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
@@ -170,7 +171,7 @@
 				PreprocessorDefinitions="MIXED,WIN32;NDEBUG;_WINDOWS;_USRDLL;XRSOUND_EXPORTS"
 				StringPooling="TRUE"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="FALSE"
+				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="FALSE"
 				RuntimeTypeInfo="TRUE"
 				UsePrecompiledHeader="3"
@@ -182,12 +183,12 @@
 				BrowseInformation="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"
-				CallingConvention="2"/>
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="vorbisfile_static.lib ogg_static.lib OpenAL32.lib"
 				OutputFile="$(OutDir)/xrSound.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -387,18 +388,32 @@
 			<File
 				RelativePath="SoundRender_Core_StartStop.cpp">
 			</File>
-			<File
-				RelativePath=".\SoundRender_CoreA.cpp">
-			</File>
-			<File
-				RelativePath=".\SoundRender_CoreA.h">
-			</File>
-			<File
-				RelativePath=".\SoundRender_CoreD.cpp">
-			</File>
-			<File
-				RelativePath=".\SoundRender_CoreD.h">
-			</File>
+			<Filter
+				Name="OpenAL"
+				Filter="">
+				<File
+					RelativePath=".\OpenALDeviceList.cpp">
+				</File>
+				<File
+					RelativePath=".\OpenALDeviceList.h">
+				</File>
+				<File
+					RelativePath=".\SoundRender_CoreA.cpp">
+				</File>
+				<File
+					RelativePath=".\SoundRender_CoreA.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="DSound"
+				Filter="">
+				<File
+					RelativePath=".\SoundRender_CoreD.cpp">
+				</File>
+				<File
+					RelativePath=".\SoundRender_CoreD.h">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Emitter"

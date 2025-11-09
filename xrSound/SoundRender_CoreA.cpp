@@ -47,23 +47,44 @@ void CSoundRender_CoreA::_initialize	(u64 window)
 {
 	bPresent			        = FALSE;
 
+	pDeviceList					= xr_new<ALDeviceList>();
+
+	if (0==pDeviceList->GetNumDevices()){ 
+		Log						("OpenAL: Can't create sound device.");
+		xr_delete				(pDeviceList);
+		return;
+	}
+	int majorVersion, minorVersion;
+	int defaultIdx					= pDeviceList->GetDefaultDevice();
+	int deviceIdx					= defaultIdx;
+	VERIFY							(defaultIdx>=0 && defaultIdx<pDeviceList->GetNumDevices());
+	const ALDeviceDesc& deviceDesc	= pDeviceList->GetDeviceDesc(deviceIdx);
+
+	Log("SOUND: OpenAL: All available devices:");
+	for (int i = 0; i < pDeviceList->GetNumDevices(); i++){
+		pDeviceList->GetDeviceVersion(i, &majorVersion, &minorVersion);
+		Msg						("%d. %s, Spec Version %d.%d %s", i + 1,	
+								pDeviceList->GetDeviceName(i), majorVersion, minorVersion,
+								(defaultIdx==i)?"(default)":"");
+	}
+
     // OpenAL device
-    pDevice						= alcOpenDevice		(NULL);
+    pDevice						= alcOpenDevice		(deviceDesc.name.c_str());
 	if (pDevice == NULL){
-		Log						("* sound: OpenAL: Failed to create device.");
+		Log						("SOUND: OpenAL: Failed to create device.");
 		bPresent				= FALSE;
 		return;
 	}
 
     // Get the device specifier.
-    ALCubyte* 			        deviceSpecifier;
+    const ALCchar*		        deviceSpecifier;
     deviceSpecifier         	= alcGetString		(pDevice, ALC_DEVICE_SPECIFIER);
-	Msg				        	("* sound: OpenAL: Using device '%s'.", deviceSpecifier);
+	Msg				        	("SOUND: OpenAL: Required device: %s. Created device: %s.", deviceDesc.name.c_str(), deviceSpecifier);
 
     // Create context
     pContext					= alcCreateContext	(pDevice,NULL);
 	if (0==pContext){
-		Log						("* sound: OpenAL: Failed to create context.");
+		Log						("SOUND: OpenAL: Failed to create context.");
 		bPresent				= FALSE;
 		alcCloseDevice			(pDevice); pDevice = 0;
 		return;
@@ -84,15 +105,15 @@ void CSoundRender_CoreA::_initialize	(u64 window)
     A_CHK				        (alListenerf		(AL_GAIN,1.f));
 
     // Check for EAX extension
-    bEAX 				        = alIsExtensionPresent		((ALubyte*)"EAX");
-    eaxSet 				        = (EAXSet*)alGetProcAddress	((ALubyte*)"EAXSet");
+    bEAX 				        = deviceDesc.eax && !deviceDesc.eax_unwanted;
+    eaxSet 				        = (EAXSet)alGetProcAddress	((const ALchar*)"EAXSet");
     if (eaxSet==NULL) bEAX 		= false;
-    eaxGet 				        = (EAXGet*)alGetProcAddress	((ALubyte*)"EAXGet");
+    eaxGet 				        = (EAXGet)alGetProcAddress	((const ALchar*)"EAXGet");
     if (eaxGet==NULL) bEAX 		= false;
 
     if (bEAX){
+		bDeferredEAX			= EAXTestSupport(TRUE);
         bEAX 					= EAXTestSupport(FALSE);
-        bDeferredEAX			= EAXTestSupport(TRUE);
     }
 
 	ZeroMemory					( &wfm, sizeof( WAVEFORMATEX ) );
@@ -118,7 +139,7 @@ void CSoundRender_CoreA::_initialize	(u64 window)
 		if (T->_initialize()){	
 			s_targets.push_back	(T);
         }else{
-        	Log					("! sound: OpenAL: Max targets - ",tit);
+        	Log					("! SOUND: OpenAL: Max targets - ",tit);
             T->_destroy			();
         	xr_delete			(T);
         	break;
@@ -126,10 +147,10 @@ void CSoundRender_CoreA::_initialize	(u64 window)
 	}
 }
 
-void CSoundRender_CoreA::set_volume(float f )
+void CSoundRender_CoreA::set_master_volume(float f )
 {
 	if (bPresent)				{
-		A_CHK				        (alListenerf	(AL_GAIN,f));
+		A_CHK				    (alListenerf	(AL_GAIN,f));
 	}
 }
 
@@ -147,8 +168,9 @@ void CSoundRender_CoreA::_clear	()
     // Reset the current context to NULL.
     alcMakeContextCurrent		(NULL);         
     // Release the context and the device.
-    alcDestroyContext			(pContext); pContext	= 0;
-    alcCloseDevice				(pDevice);	pDevice		= 0;
+    alcDestroyContext			(pContext);		pContext	= 0;
+    alcCloseDevice				(pDevice);		pDevice		= 0;
+	xr_delete					(pDeviceList);
 }
 
 void	CSoundRender_CoreA::i_eax_set			(const GUID* guid, u32 prop, void* val, u32 sz)

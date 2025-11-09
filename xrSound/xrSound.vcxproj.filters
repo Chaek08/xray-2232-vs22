@@ -2,28 +2,34 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Kernel">
-      <UniqueIdentifier>{8c8f0e6a-ef74-4a19-900e-88b243402a5f}</UniqueIdentifier>
+      <UniqueIdentifier>{7e6c0ab2-4b61-4faa-830e-be5c780e461f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Core">
-      <UniqueIdentifier>{7f4685d2-8aa2-4c5a-a4b9-748ca325e5be}</UniqueIdentifier>
+      <UniqueIdentifier>{7e699495-0e1e-4d27-8b33-d92bbf54635d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\OpenAL">
+      <UniqueIdentifier>{cbb82494-d262-4dd0-a48f-61456063ac00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\DSound">
+      <UniqueIdentifier>{482cd5c0-236a-48d5-89f1-addbc29d7484}</UniqueIdentifier>
     </Filter>
     <Filter Include="Emitter">
-      <UniqueIdentifier>{dcce2a91-3ffe-4091-9563-a907c39faff6}</UniqueIdentifier>
+      <UniqueIdentifier>{fd60373b-78f4-4b98-8c0b-8908c7c622d9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source">
-      <UniqueIdentifier>{3a0577cd-70ff-468e-9c87-7f70fafeadec}</UniqueIdentifier>
+      <UniqueIdentifier>{3a300c7a-33ae-4674-8365-e5e34be4e4aa}</UniqueIdentifier>
     </Filter>
     <Filter Include="Target">
-      <UniqueIdentifier>{3ecb62e8-d732-4de2-b198-799074466b0b}</UniqueIdentifier>
+      <UniqueIdentifier>{28b7ea62-415b-404c-9504-4b713a7fd7a4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Environment">
-      <UniqueIdentifier>{45e28508-fe85-4957-913f-ac50a5ed8316}</UniqueIdentifier>
+      <UniqueIdentifier>{1d2c88a4-d401-4914-b1e9-8a8b4931ec6c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Misc %28or old%29">
-      <UniqueIdentifier>{0b6d95f4-9c27-4fff-82c2-e34bc155ee32}</UniqueIdentifier>
+      <UniqueIdentifier>{a6b50627-64cc-41ab-861d-6278e290c428}</UniqueIdentifier>
     </Filter>
     <Filter Include="Cache">
-      <UniqueIdentifier>{a4d0c3d4-8380-4209-92c5-be8482044fb4}</UniqueIdentifier>
+      <UniqueIdentifier>{005d0334-30f0-484c-8a35-4a880bcb7648}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -48,11 +54,14 @@
     <ClInclude Include="SoundRender_Core.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="OpenALDeviceList.h">
+      <Filter>Core\OpenAL</Filter>
+    </ClInclude>
     <ClInclude Include="SoundRender_CoreA.h">
-      <Filter>Core</Filter>
+      <Filter>Core\OpenAL</Filter>
     </ClInclude>
     <ClInclude Include="SoundRender_CoreD.h">
-      <Filter>Core</Filter>
+      <Filter>Core\DSound</Filter>
     </ClInclude>
     <ClInclude Include="SoundRender_Emitter.h">
       <Filter>Emitter</Filter>
@@ -107,11 +116,14 @@
     <ClCompile Include="SoundRender_Core_StartStop.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="OpenALDeviceList.cpp">
+      <Filter>Core\OpenAL</Filter>
+    </ClCompile>
     <ClCompile Include="SoundRender_CoreA.cpp">
-      <Filter>Core</Filter>
+      <Filter>Core\OpenAL</Filter>
     </ClCompile>
     <ClCompile Include="SoundRender_CoreD.cpp">
-      <Filter>Core</Filter>
+      <Filter>Core\DSound</Filter>
     </ClCompile>
     <ClCompile Include="SoundRender_Emitter.cpp">
       <Filter>Emitter</Filter>

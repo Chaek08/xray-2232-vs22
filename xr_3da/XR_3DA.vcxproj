@@ -213,7 +213,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>scripting\;$(SolutionDir)SDK\dxSDK\Include;$(SolutionDir)xrCore;$(SolutionDir)xrLUA\src;$(SolutionDir)SDK\luabind\luabind\luabind;$(SolutionDir)SDK\luabind\luabind;$(SolutionDir)SDK\boost_1_30_0;$(SolutionDir)SDK\Xiph\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>scripting\;$(SolutionDir)SDK\dxSDK\Include;$(SolutionDir)xrCore;$(SolutionDir)xrLUA_JIT\src;$(SolutionDir)SDK\luabind\luabind\luabind;$(SolutionDir)SDK\luabind\luabind;$(SolutionDir)SDK\boost_1_30_0;$(SolutionDir)SDK\Xiph\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;ENGINE_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling />
@@ -231,7 +231,7 @@
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CallingConvention>StdCall</CallingConvention>
+      <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
       <ModuleOutputFile>$(SolutionDir)$(Configuration)\intermediate\$(ProjectName)\</ModuleOutputFile>
       <ModuleDependenciesFile>$(SolutionDir)$(Configuration)\intermediate\$(ProjectName)\</ModuleDependenciesFile>
@@ -240,7 +240,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/MACHINE:I386  %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>msacm32.lib;vfw32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msacm32.lib;vfw32.lib;ogg_static.lib;theora_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -254,7 +254,7 @@
       <FixedBaseAddress>false</FixedBaseAddress>
       <ImportLibrary>$(SolutionDir)$(Configuration)\lib\$(TargetName).lib</ImportLibrary>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\dxSDK\Lib;$(SolutionDir)SDK\Xiph\Libs;$(SolutionDir)SDK\OpenAL\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\dxSDK\Lib;$(SolutionDir)SDK\Xiph\Libs;$(SolutionDir)SDK\OpenAL\libs;$(SolutionDir)$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -601,10 +601,6 @@
     <Text Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\xrLUA\xrLUA.vcxproj">
-      <Project>{f496e4e3-22d5-4294-a0fb-a1efda7e2450}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\xrParticles\xrParticles.vcxproj">
       <Project>{94a1c366-3d19-48e6-8170-4adc2e70df97}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

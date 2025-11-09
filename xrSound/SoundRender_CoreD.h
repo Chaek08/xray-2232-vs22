@@ -4,7 +4,11 @@
 
 #include "SoundRender_Core.h"
 
+#pragma warning(push)
+#pragma warning(disable:4995)
 #include <dsound.h>
+#pragma warning(pop)
+
 #define _RELEASE(x)		{ if(x) { (x)->Release();       (x)=NULL; } }
 
 class CSoundRender_CoreD: public CSoundRender_Core
@@ -42,7 +46,7 @@ public:
 	virtual void			_initialize				( u64 window	);
 	virtual void			_clear					( );
 
-	virtual void			set_volume				( float f		);
+	virtual void			set_master_volume		( float f		);
     
 	virtual const Fvector&	listener_position		( )				{ return Listener.vPosition; }
 };

@@ -289,7 +289,7 @@ namespace std{
 	extern new_handler _RTLENTRY _EXPFUNC set_new_handler( new_handler new_p );
 };
 
-//    typedef int	(__stdcall * _PNH)( size_t );
+//    typedef int	( * _PNH)( size_t );
 //    _CRTIMP int	__cdecl _set_new_mode( int );
 //    _PNH	__cdecl set_new_handler( _PNH );
 //	typedef void (new * new_handler)();

@@ -12,16 +12,13 @@ CSoundRender_Source::CSoundRender_Source	()
 	m_fBaseVolume	= 1.f;
 	m_uGameType		= 0;
 	fname			= 0;
-	wave			= 0;
-    ovf				= xr_new<OggVorbis_File>();
     CAT.table		= 0;
-    CAT.size		= 0;
+	CAT.size		= 0;
 }
 
 CSoundRender_Source::~CSoundRender_Source	()
 {
-	unload		();
-	xr_delete	(ovf);
+	unload			();
 }
 
 bool ov_error(int res)
@@ -45,7 +42,7 @@ bool ov_error(int res)
     return false;
 }
 
-void CSoundRender_Source::i_decompress_fr(char* _dest, u32 left)
+void CSoundRender_Source::i_decompress_fr(OggVorbis_File* ovf, char* _dest, u32 left)
 {
 //*
 	float **pcm; 
@@ -76,7 +73,7 @@ void CSoundRender_Source::i_decompress_fr(char* _dest, u32 left)
         };
 	}
 }
-void CSoundRender_Source::i_decompress_hr(char* _dest, u32 left)
+void CSoundRender_Source::i_decompress_hr(OggVorbis_File* ovf, char* _dest, u32 left)
 {
 //*
 	float **pcm; 
@@ -108,24 +105,6 @@ void CSoundRender_Source::i_decompress_hr(char* _dest, u32 left)
         	if (ov_error(samples)) continue; else break;
         };
 	}
-}
-
-void CSoundRender_Source::decompress		(u32 line)
-{
-	// decompression of one cache-line
-	u32		line_size	= SoundRender->cache.get_linesize();
-	char*	dest		= (char*)	SoundRender->cache.get_dataptr	(CAT,line);
-	u32		buf_offs	= (psSoundFreq==sf_22K)?(line*line_size):(line*line_size)/2;
-	u32		left_file	= dwBytesTotal - buf_offs;
-	u32		left		= _min	(left_file,line_size);
-    // seek
-	u32	cur_pos			= u32	(ov_pcm_tell(ovf));
-	if (cur_pos!=buf_offs){
-        ov_pcm_seek		(ovf,buf_offs);
-    }
-    // decompress
-    if (psSoundFreq==sf_22K)	i_decompress_hr(dest,left);
-    else						i_decompress_fr(dest,left);
 }
 
 /*/

@@ -13,14 +13,6 @@
 #endif
 */
 
-#ifdef _EDITOR
-#	pragma comment(lib,	"oggB.lib")
-#	pragma comment(lib,	"theoraB.lib") 
-#else
-#	pragma comment(lib,	"ogg.lib")
-#	pragma comment(lib,	"theora.lib") 
-#endif
-
 CTheoraStream::CTheoraStream()                        
 {
 	// clear self

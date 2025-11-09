@@ -30,6 +30,8 @@ CSoundRender_Emitter::CSoundRender_Emitter(void)
 	bMoved				= TRUE;
 	b2D					= FALSE;
 	bStopping			= FALSE;
+	bRewind				= FALSE;
+	iPaused				= 0;
 	dwTimeStarted		= 0;
 	dwTimeToStop		= 0;
 	dwTimeToPropagade	= 0;
@@ -56,6 +58,7 @@ void CSoundRender_Emitter::Event_ReleaseOwner()
 		}
 	}
 }
+
 void CSoundRender_Emitter::Event_Propagade	()
 {
 	dwTimeToPropagade			+= ::Random.randI	(sdef_event_pulse-30,sdef_event_pulse+30);
@@ -85,3 +88,10 @@ void CSoundRender_Emitter::switch_to_3D()
 	b2D 						= FALSE;											
 }
 
+u32	CSoundRender_Emitter::play_time	( )
+{ 
+	return (state==stPlaying		|| 
+			state==stPlayingLooped	|| 
+			state==stSimulating		|| 
+			state==stSimulatingLooped)?SoundRender->Timer_Value-dwTimeStarted:0; 
+}
