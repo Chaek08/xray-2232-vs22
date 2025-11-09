@@ -178,7 +178,7 @@ typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hF
 										 );
 
 
-LONG UnhandledFilter	( struct _EXCEPTION_POINTERS *pExceptionInfo )
+LONG WINAPI UnhandledFilter	( struct _EXCEPTION_POINTERS *pExceptionInfo )
 {
 	LONG retval		= EXCEPTION_CONTINUE_SEARCH;
 	bException		= TRUE;
@@ -306,17 +306,16 @@ namespace std{
         ::SetUnhandledExceptionFilter	( UnhandledFilter );	// exception handler to all "unhandled" exceptions
     }
 #else
-    typedef int		(__cdecl * _PNH)( size_t );
-    _CRTIMP int		__cdecl _set_new_mode( int );
-    _CRTIMP _PNH	__cdecl _set_new_handler( _PNH );
-
-    void	xrDebug::_initialize		()
-    {
-        _set_new_mode					(1);					// gen exception if can't allocate memory
-        _set_new_handler				(_out_of_memory	);		// exception-handler for 'out of memory' condition
-		std::set_terminate				(_terminate);
-		std::set_unexpected				(_terminate);
-        ::SetUnhandledExceptionFilter	( UnhandledFilter );	// exception handler to all "unhandled" exceptions
-    }
+static void __cdecl def_new_handler()
+{
+    _out_of_memory(static_cast<size_t>(~0u));
+}
+void    xrDebug::_initialize()
+{
+    std::set_new_handler(def_new_handler);
+    std::set_terminate(_terminate);
+    std::set_unexpected(_terminate);
+    ::SetUnhandledExceptionFilter(UnhandledFilter);
+}
 #endif
 

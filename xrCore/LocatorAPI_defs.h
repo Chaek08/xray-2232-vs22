@@ -1,6 +1,8 @@
 #ifndef LocatorAPI_defsH
 #define LocatorAPI_defsH
 
+#include <io.h> 
+
 enum FS_List
 {
 	FS_ListFiles	=(1<<0),
@@ -36,13 +38,9 @@ public:
 };
 
 #ifdef _EDITOR
-namespace std{
-	struct 				_finddata_t;
-};
-#	define _FINDDATA_T	std::_finddata_t
+#define _FINDDATA_T std::_finddata_t
 #else
-	struct 				_finddata_t;
-#	define _FINDDATA_T	_finddata_t
+#define _FINDDATA_T _finddata64i32_t
 #endif
 
 struct XRCORE_API FS_File{
