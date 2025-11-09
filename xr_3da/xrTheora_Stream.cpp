@@ -14,11 +14,11 @@
 */
 
 #ifdef _EDITOR
-#	pragma comment(lib,	"x:\\oggB.lib")
-#	pragma comment(lib,	"x:\\theoraB.lib") 
+#	pragma comment(lib,	"oggB.lib")
+#	pragma comment(lib,	"theoraB.lib") 
 #else
-#	pragma comment(lib,	"x:\\ogg.lib")
-#	pragma comment(lib,	"x:\\theora.lib") 
+#	pragma comment(lib,	"ogg.lib")
+#	pragma comment(lib,	"theora.lib") 
 #endif
 
 CTheoraStream::CTheoraStream()                        
