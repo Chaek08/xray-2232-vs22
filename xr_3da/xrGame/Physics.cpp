@@ -486,7 +486,7 @@ void dMassSub(dMass *a,const dMass *b)
 	for (i=0; i<12; ++i) a->I[i] -= b->I[i];
 }
 
-void __stdcall PushOutCallback(bool& do_colide,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
+void PushOutCallback(bool& do_colide,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
 {
 
 	dBodyID body1=dGeomGetBody(c.geom.g1);
@@ -549,7 +549,7 @@ void __stdcall PushOutCallback(bool& do_colide,dContact& c,SGameMtl * /*material
 
 
 
-void __stdcall PushOutCallback1(bool& do_colide,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
+void PushOutCallback1(bool& do_colide,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
 {
 
 	dBodyID body1=dGeomGetBody(c.geom.g1);

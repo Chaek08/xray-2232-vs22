@@ -27,7 +27,7 @@
 //test callback функция 
 //  object - object for testing
 //return TRUE-тестировать объект / FALSE-пропустить объект
-BOOL __stdcall CBulletManager::test_callback(CObject* object, LPVOID params)
+BOOL CBulletManager::test_callback(CObject* object, LPVOID params)
 {
 	SBullet* bullet = (SBullet*)params;
 	if( (object->ID() == bullet->parent_id)		&&  
@@ -63,7 +63,7 @@ BOOL __stdcall CBulletManager::test_callback(CObject* object, LPVOID params)
 //	params;			// user defined abstract data
 //	Device.Statistic.TEST0.End();
 //return TRUE-продолжить трассировку / FALSE-закончить трассировку
-BOOL __stdcall CBulletManager::firetrace_callback(collide::rq_result& result, LPVOID params)
+BOOL CBulletManager::firetrace_callback(collide::rq_result& result, LPVOID params)
 {
 	SBullet* bullet = (SBullet*)params;
 

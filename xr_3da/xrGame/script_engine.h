@@ -15,10 +15,7 @@
 
 //#define DBG_DISABLE_SCRIPTS
 
-namespace ScriptEngine {
-	enum EScriptProcessors;
-};
-
+#include "script_engine_space.h"
 class CScriptProcess;
 class CScriptThread;
 struct lua_State;

@@ -98,7 +98,8 @@ const typename CSXML_IdToIndex::ITEM_DATA* CSXML_IdToIndex::GetById (const T_ID&
 {
 	T_INIT::InitXmlIdToIndex();
 		
-	for(T_VECTOR::iterator it = ItemDataVector().begin();
+	T_VECTOR::iterator it = ItemDataVector().begin();
+	for(;
 		ItemDataVector().end() != it; it++)
 	{
 		if( (*it).id == str_id)
@@ -112,7 +113,7 @@ const typename CSXML_IdToIndex::ITEM_DATA* CSXML_IdToIndex::GetById (const T_ID&
 		g_pStringContainer->verify();
 #endif
 		int i=0;
-		for(T_VECTOR::iterator it = ItemDataVector().begin();
+		for(;
 			ItemDataVector().end() != it; it++,i++)
 			Msg("[%d]=[%s]",i,*(*it).id );
 

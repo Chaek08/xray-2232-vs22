@@ -22,8 +22,8 @@ private:
 	EState				m_State;
 
 	void				SwitchToState				(EState new_state);
-	void __stdcall		OnFlyState					();
-	void __stdcall		OnDeadState					();
+	void 	OnFlyState					();
+	void 	OnDeadState					();
 
 	void				UpdateFlyMedia				();
 
@@ -37,7 +37,7 @@ private:
 	SStateData			m_state_data[stCount];
 private:
 	CParticlesObject*	m_fly_particles;
-	static void	__stdcall animation_end_callback	(CBlend* B);
+	static void	 animation_end_callback	(CBlend* B);
 private:
 	CObject*			m_enemy;
 

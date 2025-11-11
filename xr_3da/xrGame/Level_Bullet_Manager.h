@@ -133,8 +133,8 @@ protected:
 	void					PlayWhineSound		(SBullet* bullet, CObject* object, const Fvector& pos);
 	void					PlayExplodePS		(const Fmatrix& xf);
 	//функция обработки хитов объектов
-	static BOOL __stdcall	test_callback		(CObject* object, LPVOID params);
-	static BOOL __stdcall	firetrace_callback	(collide::rq_result& result, LPVOID params);
+	static BOOL test_callback		(CObject* object, LPVOID params);
+	static BOOL firetrace_callback	(collide::rq_result& result, LPVOID params);
 	//попадание по динамическому объекту
 	void					DynamicObjectHit	(SBullet* bullet, const Fvector& end_point, 
 												collide::rq_result& R, 	u16 target_material);

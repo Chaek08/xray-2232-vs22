@@ -30,7 +30,7 @@ public:
 
 	virtual void	shedule_Update		(u32 dt);
 	
-	static	void __stdcall	BoneCallback			(CBoneInstance *B);
+	static	void BoneCallback			(CBoneInstance *B);
 			void			vfAssignBones			();
 
 	virtual bool	use_center_to_aim				() const {return true;}

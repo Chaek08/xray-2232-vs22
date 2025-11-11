@@ -348,7 +348,8 @@ void CActor::UpdateContact		(u16 contact_id)
 	if(ID() == contact_id) return;
 
 	TALK_CONTACT_VECTOR& contacts = contacts_registry->registry().objects();
-	for(TALK_CONTACT_VECTOR_IT it = contacts.begin(); contacts.end() != it; ++it)
+	TALK_CONTACT_VECTOR_IT it = contacts.begin();
+	for(; contacts.end() != it; ++it)
 		if((*it).id == contact_id) break;
 
 	if(contacts.end() == it)

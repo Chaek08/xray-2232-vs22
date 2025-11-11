@@ -83,7 +83,7 @@ public:
 	//-------------------------------------------------------------------
 
 public: 
-	static	void __stdcall	bone_callback			(CBoneInstance *B);
+	static	void bone_callback			(CBoneInstance *B);
 	void					assign_bones			();
 	void					look_direction			(Fvector to_dir, float bone_turn_speed);
 

@@ -66,7 +66,7 @@ void CAttachmentOwner::renderable_Render		()
 		(*I)->renderable_Render();
 }
 
-void __stdcall AttachmentCallback(CKinematics *tpKinematics)
+void AttachmentCallback(CKinematics *tpKinematics)
 {
 	CGameObject				*game_object = smart_cast<CGameObject*>(static_cast<CObject*>(tpKinematics->Update_Callback_Param));
 	VERIFY					(game_object);

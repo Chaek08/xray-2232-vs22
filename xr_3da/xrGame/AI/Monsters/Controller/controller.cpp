@@ -355,7 +355,7 @@ void CController::OnFreedFromControl(const CEntity *entity)
 }
 
 
-void __stdcall CController::bone_callback(CBoneInstance *B)
+void CController::bone_callback(CBoneInstance *B)
 {
 	CController *this_class = static_cast<CController*> (B->Callback_Param);
 	this_class->m_bones.Update(B, Device.dwTimeGlobal);

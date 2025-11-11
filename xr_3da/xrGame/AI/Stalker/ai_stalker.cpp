@@ -448,7 +448,7 @@ void CAI_Stalker::net_Import		(NET_Packet& P)
 	setEnabled						(TRUE);
 }
 
-void CAI_Stalker::update_object_handler	()
+void _stdcall CAI_Stalker::update_object_handler	()
 {
 	if (!g_Alive())
 		return;
