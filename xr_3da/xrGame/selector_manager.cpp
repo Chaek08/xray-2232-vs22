@@ -19,6 +19,7 @@
 #include "memory_space.h"
 #include "ai_object_location.h"
 #include "level.h"
+#include "graph_vertex.h"
 
 CSelectorManager::CSelectorManager		(CCustomMonster *object)
 {

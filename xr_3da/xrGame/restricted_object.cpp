@@ -13,6 +13,7 @@
 #include "level.h"
 #include "ai_space.h"
 #include "level_navigation_graph.h"
+#include "level_graph.h"
 #include "space_restriction.h"
 #include "space_restriction_bridge.h"
 #include "space_restriction_base.h"

@@ -9,6 +9,7 @@
 #include "../../ai_object_location.h"
 #include "../../ai_space.h"
 #include "../../movement_manager_space.h"
+#include "../../level_graph.h"
 
 CControlPathBuilder::CControlPathBuilder(CCustomMonster *monster) : CMovementManager(monster)
 {

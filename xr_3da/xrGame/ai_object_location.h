@@ -9,6 +9,9 @@
 #pragma once
 
 #include "game_graph_space.h"
+#include "ai_space.h"
+#include "level_navigation_graph.h"
+#include "game_graph.h"
 
 namespace LevelGraph {
 	class CVertex;
@@ -24,12 +27,24 @@ public:
 	IC			void						init				();
 	IC	virtual	void						reinit				();
 	IC			void						game_vertex			(const GameGraph::CVertex	*game_vertex);
-	IC			void						game_vertex			(const GameGraph::_GRAPH_ID	game_vertex_id);
-	IC			const GameGraph::CVertex	*game_vertex		() const;
+	IC			void						game_vertex			(const GameGraph::_GRAPH_ID	game_vertex_id)
+	{
+		VERIFY(ai().game_graph().valid_vertex_id(game_vertex_id));
+		m_game_vertex_id = game_vertex_id;
+	}
+	IC			const GameGraph::CVertex	*game_vertex		() const
+	{
+		VERIFY(ai().game_graph().valid_vertex_id(m_game_vertex_id));
+		return				(ai().game_graph().vertex(m_game_vertex_id));
+	}
 	IC			const GameGraph::_GRAPH_ID	game_vertex_id		() const;
 	IC			void						level_vertex		(const LevelGraph::CVertex	*level_vertex);
 	IC			void						level_vertex		(const u32					level_vertex_id);
-	IC			const LevelGraph::CVertex	*level_vertex		() const;
+	IC			const LevelGraph::CVertex	*level_vertex		() const
+	{
+		VERIFY(ai().level_graph().valid_vertex_id(m_level_vertex_id));
+		return				(ai().level_graph().vertex(m_level_vertex_id));
+	}
 	IC			const u32					level_vertex_id		() const;
 };
 

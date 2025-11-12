@@ -34,7 +34,7 @@ IC	shared_str CSpaceRestriction::in_restrictions		() const
 }
 
 template <typename T1, typename T2>
-IC	void CSpaceRestriction::add_border				(T1 p1, T2 p2)
+void CSpaceRestriction::add_border				(T1 p1, T2 p2)
 {
 	if (!initialized())
 		return;
