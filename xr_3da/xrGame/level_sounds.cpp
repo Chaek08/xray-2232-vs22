@@ -12,7 +12,7 @@ void SStaticSound::Load(IReader& F)
 	R_ASSERT				(F.find_chunk(0));
 	xr_string				wav_name;
 	F.r_stringZ				(wav_name);
-	m_Source.create			(TRUE,wav_name.c_str());
+	m_Source.create			(wav_name.c_str(),st_Effect,sg_SourceType);
 	F.r_fvector3			(m_Position);
 	m_Volume				= F.r_float();
 	m_Freq					= F.r_float();
@@ -71,8 +71,8 @@ void SMusicTrack::Load(LPCSTR fn, LPCSTR params)
 	string256			_l, _r;
 	strconcat			(_l, fn, "_l");
 	strconcat			(_r, fn, "_r");
-	m_SourceLeft.create	(TRUE,_l,0);
-	m_SourceRight.create(TRUE,_r,0);
+	m_SourceLeft.create	(_l,st_Music,sg_Undefined);
+	m_SourceRight.create(_r,st_Music,sg_Undefined);
 	// parse params
 	int cnt				= _GetItemCount(params); VERIFY(cnt==5);
 	m_ActiveTime.set	(0,0);

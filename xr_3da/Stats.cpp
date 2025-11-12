@@ -136,7 +136,7 @@ void CStats::Show()
 		b_ps						= .99f*b_ps + .01f*(clBOX.count/clBOX.result);
 
 		CSound_stats				snd;
-		::Sound->statistic			(snd);
+		::Sound->statistic			(&snd, 0);
 		F.SetColor	(0xFFFFFFFF	);
 
 		F.OutSet	(640,0);

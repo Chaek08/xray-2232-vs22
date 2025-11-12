@@ -403,7 +403,7 @@ void CUITalkWnd::PlaySnd(LPCSTR text)
 	string_path	fn;
 	strconcat(fn, "dialogs\\", text, ".ogg");
 	if(FS.exist("$game_sounds$",fn)){
-		m_sound.create(TRUE,fn);
+		m_sound.create(fn, st_Effect, sg_SourceType);
 		m_sound.play(0,sm_2D);
 	}
 }

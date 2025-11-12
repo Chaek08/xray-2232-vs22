@@ -55,7 +55,7 @@ BOOL CDestroyablePhysicsObject::net_Spawn(CSE_Abstract* DC)
 		if(ini->section_exist("immunities"))		CHitImmunity::InitImmunities("immunities",ini);
 		if(ini->section_exist("damage_section"))	CDamageManager::load_section("damage_section",ini);
 		CPHCollisionDamageReceiver::Init();
-		if(ini->section_exist("sound"))				m_destroy_sound.create(TRUE,ini->r_string("sound","break_sound"));
+		if(ini->section_exist("sound"))				m_destroy_sound.create(ini->r_string("sound","break_sound"), st_Effect, sg_SourceType);
 		if(ini->section_exist("particles"))			m_destroy_particles=ini->r_string("particles","destroy_particles");
 	}
 	CParticlesPlayer::LoadParticles(K);

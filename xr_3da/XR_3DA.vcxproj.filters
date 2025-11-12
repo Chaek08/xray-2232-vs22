@@ -10,9 +10,6 @@
     <Filter Include="Interfaces">
       <UniqueIdentifier>{6fef8814-b78e-40b5-aba1-f51b9b1d812b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Interfaces\Sound">
-      <UniqueIdentifier>{18276d7e-67e5-447f-8463-69bbc965ed8f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Interfaces\Input">
       <UniqueIdentifier>{cc0c62a2-e094-4994-97d5-9fde41a1ea56}</UniqueIdentifier>
     </Filter>
@@ -161,9 +158,6 @@
     </ClInclude>
     <ClInclude Include="psystem.h">
       <Filter>Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Sound.h">
-      <Filter>Interfaces\Sound</Filter>
     </ClInclude>
     <ClInclude Include="IInputReceiver.h">
       <Filter>Interfaces\Input</Filter>
