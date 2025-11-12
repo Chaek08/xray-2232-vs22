@@ -22,10 +22,7 @@ namespace MonsterSpace {
 	enum EScriptMonsterSpeedParam;
 };
 
-namespace PatrolPathManager {
-	enum EPatrolStartType;
-	enum EPatrolRouteType;
-};
+#include "patrol_path_manager_space.h"
 
 class CPatrolPath;
 class CScriptGameObject;

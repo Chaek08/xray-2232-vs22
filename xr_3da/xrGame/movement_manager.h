@@ -19,9 +19,7 @@
 //		4. dynamic obstacles avoiding
 //		5. fast location inaccessability detection
 
-namespace MovementManager {
-	enum EPathType;
-};
+#include "movement_manager_space.h"
 
 namespace DetailPathManager {
 	enum EDetailPathType;

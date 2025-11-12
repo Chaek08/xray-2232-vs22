@@ -36,6 +36,7 @@
 #include "sound_user_data_visitor.h"
 #include "mt_config.h"
 #include "PHMovementControl.h"
+#include "ai_object_location_impl.h"
 
 #include "ai/monsters/snork/snork.h"
 #include "ai/monsters/burer/burer.h"

@@ -10,9 +10,7 @@
 
 #include "control_action.h"
 
-namespace MovementManager {
-	enum EPathType;
-};
+#include "movement_manager_space.h"
 
 namespace DetailPathManager {
 	enum EDetailPathType;

@@ -18,18 +18,14 @@ enum EPdaMsg;
 enum ESoundTypes;
 enum ETaskState;
 
-namespace ALife {enum ERelationType;};
-namespace ScriptEntity {enum EActionType;};
-namespace MovementManager { enum EPathType;};
-namespace DetailPathManager { enum EDetailPathType;};
-namespace SightManager {enum ESightType;};
+#include "script_entity_space.h"
+#include "movement_manager_space.h"
+#include "detail_path_manager_space.h"
+#include "sight_manager_space.h"
 
 class NET_Packet;
 
-namespace PatrolPathManager { 
-	enum EPatrolStartType;
-	enum EPatrolRouteType;
-};
+#include "patrol_path_manager_space.h"
 
 namespace MemorySpace {
 	struct CMemoryInfo;
@@ -57,9 +53,7 @@ namespace MonsterSpace {
 	struct SBoneRotation;
 };
 
-namespace GameObject {
-	enum ECallbackType;
-};
+#include "game_object_space.h"
 
 class CGameObject;
 class CScriptHit;
@@ -488,3 +482,5 @@ public:
 add_to_type_list(CScriptGameObject)
 #undef script_type_list
 #define script_type_list save_type_list(CScriptGameObject)
+
+#include "script_game_object_impl.h"

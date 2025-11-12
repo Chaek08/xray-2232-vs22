@@ -16,7 +16,6 @@
 #ifdef XRGAME_EXPORTS
 
 #include "PhraseDialog.h"
-#include "alife_registry_container_composition.h"
 
 #endif
 

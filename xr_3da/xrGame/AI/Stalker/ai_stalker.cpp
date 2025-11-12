@@ -51,6 +51,7 @@
 #include "../../stalker_sound_data_visitor.h"
 #include "ai_stalker_space.h"
 #include "../../mt_config.h"
+#include "../ai_object_location_impl.h"
 
 #ifdef DEBUG
 #	include "../../alife_simulator.h"

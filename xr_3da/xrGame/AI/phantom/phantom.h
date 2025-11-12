@@ -22,8 +22,8 @@ private:
 	EState				m_State;
 
 	void				SwitchToState				(EState new_state);
-	void 	OnFlyState					();
-	void 	OnDeadState					();
+	void 	_stdcall	OnFlyState					();
+	void 	_stdcall	OnDeadState					();
 
 	void				UpdateFlyMedia				();
 

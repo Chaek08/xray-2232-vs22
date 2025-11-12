@@ -461,7 +461,8 @@ void CUIInventoryWnd::InitInventory()
 	}
 
 	//Пояс
-	for(TIItemContainer::iterator it =  pInv->m_belt.begin(); pInv->m_belt.end() != it; ++it) 
+	TIItemContainer::iterator it = pInv->m_belt.begin();
+	for(; pInv->m_belt.end() != it; ++it) 
 	{
 		if((*it)) 
 		{

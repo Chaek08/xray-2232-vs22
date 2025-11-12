@@ -4,6 +4,7 @@
 #include "../../ai_object_location.h"
 #include "../../ai_space.h"
 #include "../../level_navigation_graph.h"
+#include "../ai_object_location_impl.h"
 
 // проверить, находится ли объект entity на ноде
 // возвращает позицию объекта, если он находится на ноде, или центр его ноды

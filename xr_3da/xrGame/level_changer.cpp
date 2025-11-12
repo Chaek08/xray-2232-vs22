@@ -12,6 +12,7 @@
 #include "actor.h"
 #include "xrserver_objects_alife.h"
 #include "level.h"
+#include "ai_object_location_impl.h"
 
 CLevelChanger::~CLevelChanger	()
 {

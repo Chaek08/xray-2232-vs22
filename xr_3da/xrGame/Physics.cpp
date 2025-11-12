@@ -595,7 +595,7 @@ void PushOutCallback1(bool& do_colide,dContact& c,SGameMtl * /*material_1*/,SGam
 		dBodyAddForce(body2,-force.x,-force.y,-force.z);
 	}
 }
-void __stdcall PushOutCallback2(bool& do_colide,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
+void PushOutCallback2(bool& do_colide,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
 {
 
 	dBodyID body1=dGeomGetBody(c.geom.g1);

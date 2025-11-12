@@ -12,7 +12,7 @@ namespace MemorySpace {
 	struct CSoundObject;
 };
 
-enum ESoundTypes;
+#include "ai_sounds.h"
 
 class CCustomMonster;
 

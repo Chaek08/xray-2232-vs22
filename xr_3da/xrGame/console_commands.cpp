@@ -247,7 +247,8 @@ public:
 	{
 		u32 SVObjNum = Level().Server->GetEntitiesNum();
 		xr_vector<u16>	SObjID;
-		for (u32 i=0; i<SVObjNum; i++)
+		u32 i = 0;
+		for (; i<SVObjNum; i++)
 		{
 			CSE_Abstract* pEntity = Level().Server->GetEntity(i);
 			SObjID.push_back(pEntity->ID);
@@ -726,10 +727,10 @@ public:
 			  Console->Hide		();
 			  string_path		fn;
 			  u32		loops	=	0;
-			  LPSTR		comma	=	strchr(args,',');
+			  LPCSTR		comma	=	strchr(args,',');
 			  if (comma)	{
 				  loops			=	atoi	(comma+1);
-				  *comma		=	0;	//. :)
+				  comma		=	0;	//. :)
 			  }
 			  strconcat			(fn,args,".xrdemo");
 			  g_pGameLevel->Cameras.AddEffector(xr_new<CDemoPlay> (fn,1.0f,loops));
