@@ -15,7 +15,7 @@
 #include "xrMessages.h"
 #include "ui/UIInventoryUtilities.h"
 #include "xr_time.h"
-#include "net_utils.h"
+#include "../xrNetServer/net_utils.h"
 
 using namespace luabind;
 

@@ -222,8 +222,6 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 	if (!CObjectHandler::net_Spawn(DC) || !inherited::net_Spawn(DC))
 		return						(FALSE);
 
-	m_pPhysics_support->in_NetSpawn	(e);
-	
 	m_dwMoney						= tpHuman->m_dwMoney;
 
 	animation().reload				(this);
@@ -305,6 +303,9 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 		LoadSounds	(*cNameSect());
 
 	sight().setup					(CSightAction(SightManager::eSightTypeCurrentDirection));
+
+	if (!g_Alive())
+		m_pPhysics_support->in_NetSpawn	(e);
 
 	return							(TRUE);
 }

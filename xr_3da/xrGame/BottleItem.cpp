@@ -6,7 +6,7 @@
 #include "stdafx.h"
 #include "BottleItem.h"
 #include "xrmessages.h"
-#include "net_utils.h"
+#include "../xrNetServer/net_utils.h"
 
 #define BREAK_POWER 5.f
 

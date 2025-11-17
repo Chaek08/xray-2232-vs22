@@ -1033,13 +1033,7 @@
     <ClInclude Include="mslotutils.h" />
     <ClInclude Include="mt_config.h" />
     <ClInclude Include="Needles.h" />
-    <ClInclude Include="NET_Client.h" />
-    <ClInclude Include="NET_Compressor.h" />
-    <ClInclude Include="NET_Messages.h" />
     <ClInclude Include="NET_Queue.h" />
-    <ClInclude Include="NET_Server.h" />
-    <ClInclude Include="NET_Shared.h" />
-    <ClInclude Include="NET_utils.h" />
     <ClInclude Include="night_vision_effector.h" />
     <ClInclude Include="object_action.h" />
     <ClInclude Include="object_actions.h" />

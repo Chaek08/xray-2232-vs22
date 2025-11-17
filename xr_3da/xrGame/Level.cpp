@@ -268,6 +268,54 @@ int	CLevel::get_RPID(LPCSTR /**name/**/)
 
 BOOL		g_bDebugEvents = FALSE	;
 
+
+void CLevel::cl_Process_Event				(u16 dest, u16 type, NET_Packet& P)
+{
+	//			Msg				("--- event[%d] for [%d]",type,dest);
+	CObject*	 O	= Objects.net_Find	(dest);
+	if (0==O)		{
+		Msg("* WARNING: c_EVENT[%d] to [%d]: unknown dest",type,dest);
+		return;
+	}
+	CGameObject* GO = smart_cast<CGameObject*>(O);
+	if (!GO)		{
+		Msg("! ERROR: c_EVENT[%d] : non-game-object",dest);
+		return;
+	}
+	if (type != GE_DESTROY_REJECT)
+	{
+		if (type == GE_DESTROY)
+			Game().OnDestroy(GO);
+		GO->OnEvent		(P,type);
+	}
+	else {
+		u32				pos = P.r_tell();
+		u16				id = P.r_u16();
+		P.r_seek		(pos);
+
+		bool			ok = true;
+
+		CObject			*D	= Objects.net_Find	(id);
+		if (0==D)		{
+			Msg			("! ERROR: c_EVENT[%d] : unknown dest",id);
+			ok			= false;
+		}
+
+		CGameObject		*GD = smart_cast<CGameObject*>(D);
+		if (!GD)		{
+			Msg			("! ERROR: c_EVENT[%d] : non-game-object",id);
+			ok			= false;
+		}
+
+		GO->OnEvent		(P,GE_OWNERSHIP_REJECT);
+		if (ok)
+		{
+			Game().OnDestroy(GD);
+			GD->OnEvent	(P,GE_DESTROY);
+		};
+	}
+};
+
 void CLevel::ProcessGameEvents		()
 {
 	// Game events
@@ -282,52 +330,26 @@ void CLevel::ProcessGameEvents		()
 
 		while	(game_events->available(svT))
 		{
-			u16 dest,type;
-			game_events->get	(dest,type,P);
+			u16 ID,dest,type;
+			game_events->get	(ID,dest,type,P);
 
-			// Msg				("--- event[%d] for [%d]",type,dest);
-			CObject*	 O	= Objects.net_Find	(dest);
-			if (0==O)		{
-				Msg("* WARNING: c_EVENT[%d] : unknown dest",dest);
-				continue;
-			}
-			CGameObject* GO = smart_cast<CGameObject*>(O);
-			if (!GO)		{
-				Msg("! ERROR: c_EVENT[%d] : non-game-object",dest);
-				continue;
-			}
-			if (type != GE_DESTROY_REJECT)
+			switch (ID)
 			{
-				if (type == GE_DESTROY)
-					Game().OnDestroy(GO);
-				GO->OnEvent		(P,type);
-			}
-			else {
-				u32				pos = P.r_tell();
-				u16				id = P.r_u16();
-				P.r_seek		(pos);
-
-				bool			ok = true;
-				
-				CObject			*D	= Objects.net_Find	(id);
-				if (0==D)		{
-					Msg			("! ERROR: c_EVENT[%d] : unknown dest",id);
-					ok			= false;
-				}
-
-				CGameObject		*GD = smart_cast<CGameObject*>(D);
-				if (!GD)		{
-					Msg			("! ERROR: c_EVENT[%d] : non-game-object",id);
-					ok			= false;
-				}
-
-				GO->OnEvent		(P,GE_OWNERSHIP_REJECT);
-				if (ok)
+			case M_SPAWN:
 				{
-					Game().OnDestroy(GD);
-					GD->OnEvent	(P,GE_DESTROY);
-				};
-			}
+					u16 dummy16;
+					P.r_begin(dummy16);
+					cl_Process_Spawn(P);
+				}break;
+			case M_EVENT:
+				{
+					cl_Process_Event(dest, type, P);
+				}break;
+			default:
+				{
+					VERIFY(0);
+				}break;
+			}			
 		}
 	}
 	if (OnServer() && GameID()!= GAME_SINGLE)
@@ -336,6 +358,9 @@ void CLevel::ProcessGameEvents		()
 
 void CLevel::OnFrame	()
 {
+	if (GameID()!=GAME_SINGLE)			psDeviceFlags.set(rsDisableObjectsAsCrows,true);
+	else								psDeviceFlags.set(rsDisableObjectsAsCrows,false);
+
 	// Client receive
 	if (net_isDisconnected())	
 	{
@@ -520,7 +545,7 @@ void CLevel::OnEvent(EVENT E, u64 P1, u64 /**P2/**/)
 	if (E==eEntitySpawn)	{
 		char	Name[128];	Name[0]=0;
 		sscanf	(LPCSTR(P1),"%s", Name);
-		Level().g_cl_Spawn	(Name,0xff, M_SPAWN_OBJECT_LOCAL);
+		Level().g_cl_Spawn	(Name,0xff, M_SPAWN_OBJECT_LOCAL, Fvector().set(0,0,0));
 	} else if (E==eChangeRP && P1) {
 	} else if (E==eDemoPlay && P1) {
 		char* name = (char*)P1;

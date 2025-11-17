@@ -9,6 +9,7 @@ class XRNETSERVER_API IClient
 	{
 		u32		bLocal		: 1;
 		u32		bConnected	: 1;
+		u32		bReconnect	: 1;
 	};
 public:
 	IClientStatistic	stats;
@@ -18,8 +19,14 @@ public:
 	Flags				flags;	// local/host/normal
 	u32					dwTime_LastUpdate;
 
+	char				m_cAddress[4];
+	DWORD				m_dwPort;
+
 	IClient(CTimer* timer):stats(timer)	{
 		dwTime_LastUpdate	= 0;
+		flags.bLocal = FALSE;
+		flags.bConnected = FALSE;
+		flags.bReconnect = FALSE;
 	}
 	virtual ~IClient(){}
 };
@@ -94,6 +101,7 @@ protected:
 
 	xrCriticalSection		csPlayers;
 	xr_vector<IClient*>		net_Players;
+	xr_vector<IClient*>		net_Players_disconnected;
 	IClient*				SV_Client;
 
 	int						psNET_Port;	
@@ -119,7 +127,7 @@ protected:
 	CTimer*					device_timer;
 
 	virtual void			new_client			(ClientID clientID, LPCSTR name, bool bLocal)   =0;
-			bool			GetClientAddress	(IDirectPlay8Address* pClientAddress, char* Address);
+			bool			GetClientAddress	(IDirectPlay8Address* pClientAddress, char* Address, DWORD* pPort = NULL);
 
 			IBannedClient*	GetBannedClient		(const char* Address);			
 			void			BannedAddress_Save	(u32 it, IWriter* fs);
@@ -145,6 +153,7 @@ public:
 	// statistic
 	const IServerStatistic*	GetStatistic		() { return &stats; }
 	void					ClearStatistic		();
+	void					UpdateClientStatistic		(IClient* C);
 
 	// extended functionality
 	virtual u32				OnMessage			(NET_Packet& P, ClientID/*DPNID*/ sender);	// Non-Zero means broadcasting with "flags" as returned
@@ -158,11 +167,14 @@ public:
 
 	IC u32					client_Count		()			{ return net_Players.size(); }
 	IC IClient*				client_Get			(u32 num)	{ return net_Players[num]; }
+
+	IC u32					disconnected_client_Count		()			{ return net_Players_disconnected.size(); }
+	IC IClient*				disconnected_client_Get			(u32 num)	{ return net_Players_disconnected[num]; }
 	
 	BOOL					HasBandwidth		(IClient* C);
 
 	IC int					GetPort				()			{ return psNET_Port; };
-			bool			GetClientAddress	(ClientID ID, char* Address);
+			bool			GetClientAddress	(ClientID ID, char* Address, DWORD* pPort = NULL);
 	virtual bool			DisconnectClient	(IClient* C);
 	virtual bool			DisconnectAddress	(char* Address);
 	virtual void			BanClient			(IClient* C, u32 BanTime);

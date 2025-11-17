@@ -7,7 +7,7 @@
 #pragma once
 
 #include "../igame_level.h"
-#include "net_client.h"
+#include "../xrNetServer/NET_Client.h"
 #include "script_export_space.h"
 #include "../StatGraph.h"
 #include "xrMessages.h"
@@ -33,6 +33,7 @@ class	CLevelSoundManager;
 
 const int maxRP					= 64;
 const int maxTeams				= 32;
+const int NET_ObjectsPerPacket	= NET_PacketSizeLimit/280;
 
 //class CFogOfWar;
 class CFogOfWarMngr;
@@ -41,6 +42,7 @@ class CMapManager;
 
 class CLevel					: public IGame_Level, public IPureClient
 {
+	void						ClearAllObjects			();
 private:
 #ifdef DEBUG
 	bool						m_bSynchronization;
@@ -92,6 +94,12 @@ public:
 	void						SetNumCrSteps			( u32 NumSteps );
 	static void __stdcall		PhisStepsCallback		( u32 Time0, u32 Time1 );
 	bool						In_NetCorrectionPrediction	() {return m_bIn_CrPr;};
+
+	virtual void				OnMessage				(void* data, u32 size);
+	virtual void				OnInvalidHost			();
+	virtual void				OnInvalidPassword		();
+	virtual void				OnSessionFull			();
+	virtual void				OnConnectRejected		();
 private:
 	BOOL						m_bNeed_CrPr;
 	u32							m_dwNumSteps;
@@ -145,6 +153,25 @@ private:
 	SoundRegistryMap			sound_registry;
 public:
 	void						PrefetchSound (LPCSTR name);
+
+protected:
+	BOOL						net_start_result_total;
+	BOOL						connected_to_server;
+
+	bool	xr_stdcall			net_start1				();
+	bool	xr_stdcall			net_start2				();
+	bool	xr_stdcall			net_start3				();
+	bool	xr_stdcall			net_start4				();
+	bool	xr_stdcall			net_start5				();
+	bool	xr_stdcall			net_start6				();
+
+	bool	xr_stdcall			net_start_client1				();
+	bool	xr_stdcall			net_start_client2				();
+	bool	xr_stdcall			net_start_client3				();
+	bool	xr_stdcall			net_start_client4				();
+	bool	xr_stdcall			net_start_client5				();
+	bool	xr_stdcall			net_start_client6				();
+
 public:
 	// sounds
 	xr_vector<ref_sound*>		static_Sounds;
@@ -170,6 +197,8 @@ public:
 	virtual void				OnEvent					( EVENT E, u64 P1, u64 P2 );
 	virtual void				OnFrame					( void );
 	virtual void				OnRender				( );
+	void						cl_Process_Event		(u16 dest, u16 type, NET_Packet& P);
+	void						cl_Process_Spawn		(NET_Packet& P);
 	void						ProcessGameEvents		( );
 	void						ProcessGameSpawns		( );
 
@@ -195,7 +224,7 @@ public:
 			u32					Objects_net_Save		(NET_Packet* _Packet, u32 start, u32 count);
 	virtual	void				Send					(NET_Packet& P, u32 dwFlags=DPNSEND_GUARANTEED, u32 dwTimeout=0);
 	
-	void						g_cl_Spawn				(LPCSTR name, u8 rp, u16 flags);		// only ask server
+	void						g_cl_Spawn				(LPCSTR name, u8 rp, u16 flags, Fvector pos);	// only ask server
 	void						g_sv_Spawn				(CSE_Abstract* E);					// server reply/command spawning
 	
 	// Save/Load/State
