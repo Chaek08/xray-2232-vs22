@@ -7,9 +7,15 @@
 #define AFX_XRSERVER_H__65728A25_16FC_4A7B_8CCE_D798CA5EC64E__INCLUDED_
 #pragma once
 
-#include "net_server.h"
+#include "../xrNetServer/net_server.h"
 #include "game_sv_base.h"
 #include "id_generator.h"
+
+#ifdef DEBUG
+//#	define SLOW_VERIFY_ENTITIES
+#endif
+
+
 class CSE_Abstract;
 
 const u32	NET_Latency		= 50;		// time in (ms)
@@ -23,11 +29,16 @@ public:
 	CSE_Abstract*			owner;
 	BOOL					net_Ready;
 	BOOL					net_Accepted;
+
 	u32						game_replicate_id;
+
+	BOOL					net_PassUpdates;
+	u32						net_LastMoveUpdateTime;
 
 	game_PlayerState*		ps;
 
 	xrClientData			();
+	virtual void			Clear();
 	virtual ~xrClientData	();
 };
 
@@ -79,7 +90,7 @@ public:
 	}
 
 	void					Perform_connect_spawn	(CSE_Abstract* E, xrClientData* to, NET_Packet& P);
-	void					Perform_transfer		(CSE_Abstract* what, CSE_Abstract* from, CSE_Abstract* to);
+	void					Perform_transfer		(NET_Packet &PR, NET_Packet &PT, CSE_Abstract* what, CSE_Abstract* from, CSE_Abstract* to);
 	void					Perform_reject			(CSE_Abstract* what, CSE_Abstract* from, int delta = 0);
 	void					Perform_destroy			(CSE_Abstract* tpSE_Abstract, u32 mode);
 
@@ -122,6 +133,7 @@ public:
 
 	virtual IClient*		client_Create		();								// create client info
 	virtual void			client_Replicate	();								// replicate current state to client
+	virtual IClient*		client_Find_Get		(ClientID ID);					// Find earlier disconnected client
 	virtual void			client_Destroy		(IClient* C);					// destroy client info
 
 	// utilities

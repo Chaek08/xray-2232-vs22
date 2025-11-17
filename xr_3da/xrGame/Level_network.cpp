@@ -5,12 +5,21 @@
 #include "xrmessages.h"
 #include "game_cl_base.h"
 #include "PHCommander.h"
+#include "net_queue.h"
 
 void CLevel::net_Stop		()
 {
 	Msg							("- Disconnect");
-	if (Server)					Server->SLS_Clear	();
+	
+	if (OnServer())
+		Server->SLS_Clear		();
+	
+	if (OnClient())
+		ClearAllObjects			();
+
+	BOOL b_stored = psDeviceFlags.test(rsDisableObjectsAsCrows);
 	for (int i=0; i<6; ++i) {
+		psDeviceFlags.set(rsDisableObjectsAsCrows,TRUE);
 		ClientReceive			();
 		ProcessGameEvents		();
 		Objects.Update			();
@@ -22,11 +31,12 @@ void CLevel::net_Stop		()
 	BulletManager().Clear		();
 	ph_commander().clear		();
 	ph_commander_scripts().clear();
-	if (Server)
-	{
+	if (Server) {
 		Server->Disconnect		();
 		xr_delete				(Server);
 	}
+	psDeviceFlags.set(rsDisableObjectsAsCrows, b_stored);
+
 }
 
 BOOL	g_bCalculatePing = FALSE;
@@ -61,7 +71,7 @@ void CLevel::ClientSend	()
 	//-------------------------------------------------
 	while (1)				{
 		P.w_begin						(M_UPDATE);
-		start	= Objects.net_Export	(&P, start, 48);
+		start	= Objects.net_Export	(&P, start, NET_ObjectsPerPacket);
 		if (P.B.count>2)				Send	(P, net_flags(FALSE));
 		else							break	;
 	}
@@ -101,8 +111,7 @@ void CLevel::ClientSave	()
 	for (;;) {
 		P.w_begin	(M_SAVE_PACKET);
 		
-//		start		= Objects.net_Save(&P, start, 48);
-		start		= Objects_net_Save(&P, start, 48);
+		start		= Objects_net_Save(&P, start, NET_ObjectsPerPacket);
 
 		if (P.B.count>2)
 			Send	(P, net_flags(FALSE));
@@ -112,13 +121,16 @@ void CLevel::ClientSave	()
 }
 
 extern		 float		phTimefactor;
+extern		BOOL		g_SV_Disable_Auth_Check;
+
 void CLevel::Send		(NET_Packet& P, u32 dwFlags, u32 dwTimeout)
 {
 	// optimize the case when server located in our memory
 	if (Server && game_configured && OnServer()){
 		Server->OnMessage	(P,Game().local_svdpnid	);
 	}else											IPureClient::Send	(P,dwFlags,dwTimeout	);
-	if (g_pGameLevel && Level().game && GameID() != GAME_SINGLE)		{
+
+	if (g_pGameLevel && Level().game && GameID() != GAME_SINGLE && !g_SV_Disable_Auth_Check)		{
 		// anti-cheat
 		phTimefactor		= 1.f					;
 		psDeviceFlags.set	(rsConstantFPS,FALSE)	;	
@@ -127,11 +139,12 @@ void CLevel::Send		(NET_Packet& P, u32 dwFlags, u32 dwTimeout)
 
 void CLevel::net_Update	()
 {
-	// If we have enought bandwidth - replicate client data on to server
-	Device.Statistic.netClient.Begin	();
-	ClientSend							();
-	Device.Statistic.netClient.End		();
-
+	if(game_configured){
+		// If we have enought bandwidth - replicate client data on to server
+		Device.Statistic.netClient.Begin	();
+		ClientSend							();
+		Device.Statistic.netClient.End		();
+	}
 	// If server - perform server-update
 	if (Server && OnServer())	{
 		Device.Statistic.netServer.Begin();
@@ -160,14 +173,25 @@ BOOL			CLevel::Connect2Server				(LPCSTR options)
 	while	(!m_bConnectResultReceived)		{ 
 		ClientReceive	()	;
 		Sleep			(5)	; 
-		Server->Update	()	;
+		if(Server)
+			Server->Update	()	;
 	}
 	Msg							("%c client : connection %s - <%s>", m_bConnectResult ?'*':'!', m_bConnectResult ? "accepted" : "rejected", m_sConnectResult.c_str());
 	if		(!m_bConnectResult) 
 	{
+		OnConnectRejected	();	
 		Disconnect		()	;
 		return FALSE		;
 	};
+
+	net_Syncronize();
+
+	while (!net_IsSyncronised()) {
+		ClientReceive();
+		Sleep(5);
+		if (Server)
+			Server->Update();
+	}
 
 	//---------------------------------------------------------------------------
 	P.w_begin	(M_CLIENT_REQUEST_CONNECTION_DATA);
@@ -208,4 +232,80 @@ void			CLevel::SendPingMessage				()
 	P.w_u32			(m_dwCL_PingLastSendTime);
 	P.w_u32			(m_dwRealPing);
 	Send	(P, net_flags(FALSE));
+};
+
+void			CLevel::ClearAllObjects				()
+{
+	u32 CLObjNum = Level().Objects.o_count();
+
+	bool ParentFound = true;
+	
+	while (ParentFound)
+	{	
+		ParentFound = false;
+		for (u32 i=0; i<CLObjNum; i++)
+		{
+			CObject* pObj = Level().Objects.o_get_by_iterator(i);
+			if (!pObj->H_Parent()) continue;
+			//-----------------------------------------------------------
+			NET_Packet			GEN;
+			GEN.w_begin			(M_EVENT);
+			//---------------------------------------------		
+			GEN.w_u32			(Level().timeServer());
+			GEN.w_u16			(GE_OWNERSHIP_REJECT);
+			GEN.w_u16			(pObj->H_Parent()->ID());
+			GEN.w_u16			(u16(pObj->ID()));
+			game_events->insert	(GEN);
+			if (g_bDebugEvents)	ProcessGameEvents();
+			//-------------------------------------------------------------
+			ParentFound = true;
+			//-------------------------------------------------------------
+#ifdef DEBUG
+			Msg ("Rejection of %s[%d] from %s[%d]", *(pObj->cNameSect()), pObj->ID(), *(pObj->H_Parent()->cNameSect()), pObj->H_Parent()->ID());
+#endif
+		};
+		ProcessGameEvents();
+	};
+
+	for (u32 i=0; i<CLObjNum; i++)
+	{
+		CObject* pObj = Level().Objects.o_get_by_iterator(i);
+		R_ASSERT(pObj->H_Parent()==NULL);
+		//-----------------------------------------------------------
+		NET_Packet			GEN;
+		GEN.w_begin			(M_EVENT);
+		//---------------------------------------------		
+		GEN.w_u32			(Level().timeServer());
+		GEN.w_u16			(GE_DESTROY);
+		GEN.w_u16			(u16(pObj->ID()));
+		game_events->insert	(GEN);
+		if (g_bDebugEvents)	ProcessGameEvents();
+		//-------------------------------------------------------------
+		ParentFound = true;
+		//-------------------------------------------------------------
+#ifdef DEBUG
+		Msg ("Destruction of %s[%d]", *(pObj->cNameSect()), pObj->ID());
+#endif
+	};
+	ProcessGameEvents();
+};
+
+void				CLevel::OnInvalidHost			()
+{
+	IPureClient::OnInvalidHost();
+};
+
+void				CLevel::OnInvalidPassword		()
+{
+	IPureClient::OnInvalidPassword();
+};
+
+void				CLevel::OnSessionFull			()
+{
+	IPureClient::OnSessionFull();
+}
+
+void				CLevel::OnConnectRejected		()
+{
+	IPureClient::OnConnectRejected();
 };

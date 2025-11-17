@@ -117,6 +117,8 @@ void CRenderDevice::PreCache	(u32 amount)
 	dwPrecacheFrame	= dwPrecacheTotal = amount;
 }
 
+ENGINE_API xr_list<LOADING_EVENT>			g_loading_events;
+
 void CRenderDevice::Run			()
 {
     MSG				msg;
@@ -158,7 +160,13 @@ void CRenderDevice::Run			()
         else
         {
 			if (bReady) {
-				FrameMove						( );
+
+				if(g_loading_events.size()){
+					if( g_loading_events.front()() )
+						g_loading_events.pop_front();
+					continue;
+				}else
+					FrameMove						( );
 
 				// Precache
 				if (dwPrecacheFrame)
