@@ -7,7 +7,7 @@
 #include "stdafx.h"
 #include "ArtifactMerger.h"
 #include "PhysicsShell.h"
-#include "../xrNetServer/net_utils.h"
+#include "net_utils.h"
 
 template<typename A> 
 int CArtefactMerger::GetArtefactNum()

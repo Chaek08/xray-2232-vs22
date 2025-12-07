@@ -7,7 +7,7 @@
 #include "std_classes.h"
 
 #include "xr_object.h"
-#include "../xrNetServer/NET_utils.h"
+#include "net_utils.h"
 
 class fClassEQ {
 	CLASS_ID cls;

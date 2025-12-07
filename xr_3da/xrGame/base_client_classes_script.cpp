@@ -14,7 +14,7 @@
 #include "../fbasicvisual.h"
 #include "../skeletonanimated.h"
 #include "ai/stalker/ai_stalker.h"
-#include "../xrNetServer/NET_utils.h"
+#include "net_utils.h"
 
 using namespace luabind;
 

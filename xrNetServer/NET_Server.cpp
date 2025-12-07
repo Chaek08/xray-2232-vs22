@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "dxerr9.h"
+
 #include "net_server.h"
 
 #define		BASE_PORT		5445
@@ -11,7 +11,7 @@ LPCSTR nameBanned	= "banned.ltx";
 
 XRNETSERVER_API int		psNET_ServerUpdate	= 30;		// FPS
 XRNETSERVER_API int		psNET_ServerPending	= 2;
-
+//XRNETSERVER_API int		psNET_Port			= 5445;
 
 void IClientStatistic::Update(DPN_CONNECTION_INFO& CI)
 {
@@ -51,6 +51,7 @@ IPureServer::IPureServer	(CTimer* timer)
 	device_timer			= timer;
 	stats.clear				();
 	stats.dwSendTime		= TimeGlobal(device_timer);
+	psNET_Port				= 5445;
 	SV_Client = NULL;
 }
 
@@ -142,51 +143,21 @@ BOOL IPureServer::Connect(LPCSTR options)
 	string4096				session_name;
 	string4096				session_options = "";
 	string64				password_str = "";
-	u32						dwMaxPlayers = 0;
 
 	strcpy					(session_name,options);
 	if (strchr(session_name,'/'))	*strchr(session_name,'/')=0;
 	if (strchr(options,'/'))		strcpy(session_options, strchr(options,'/')+1);
-	const char* psw_pos = strstr(options, "psw=");
-	if (psw_pos)
+	if (strstr(options, "psw="))
 	{
-		char* PSW = const_cast<char*>(psw_pos) + 4;
+		const char* PSW = strstr(options, "psw=") + 4;
 		if (strchr(PSW, '/')) 
 			strncpy(password_str, PSW, strchr(PSW, '/') - PSW);
 		else
-			strncpy(password_str, PSW, 63);
+			strcpy(password_str, PSW);
 	}
-	const char* mp_pos = strstr(options, "maxplayers=");
-	if (mp_pos)
-	{
-		char* sMaxPlayers = const_cast<char*>(mp_pos) + 11;
-		string64 tmpStr = "";
-		if (strchr(sMaxPlayers, '/')) 
-			strncpy(tmpStr, sMaxPlayers, strchr(sMaxPlayers, '/') - sMaxPlayers);
-		else
-			strncpy(tmpStr, sMaxPlayers, 63);
-		dwMaxPlayers = atol(tmpStr);
-	}
-	Msg("MaxPlayers = %d", dwMaxPlayers);
 
-	//---------------------------
-	string1024 tmp;
-//	HRESULT CoInitializeExRes = CoInitializeEx(NULL, 0);	
-//	if (CoInitializeExRes != S_OK && CoInitializeExRes != S_FALSE)
-//	{
-//		DXTRACE_ERR(tmp, CoInitializeExRes);
-//		CHK_DX(CoInitializeExRes);
-//	};	
-	//---------------------------
     // Create the IDirectPlay8Client object.
-	HRESULT CoCreateInstanceRes = CoCreateInstance	(CLSID_DirectPlay8Server, NULL, CLSCTX_INPROC_SERVER, IID_IDirectPlay8Server, (LPVOID*) &NET);
-	//---------------------------	
-	if (CoCreateInstanceRes != S_OK)
-	{
-		DXTRACE_ERR(tmp, CoCreateInstanceRes );
-		CHK_DX(CoCreateInstanceRes );
-	}	
-	//---------------------------
+    CHK_DX(CoCreateInstance	(CLSID_DirectPlay8Server, NULL, CLSCTX_INPROC_SERVER, IID_IDirectPlay8Server, (LPVOID*) &NET));
 	
     // Initialize IDirectPlay8Client object.
 #ifdef DEBUG
@@ -227,7 +198,6 @@ BOOL IPureServer::Connect(LPCSTR options)
     dpAppDesc.dwFlags			= DPNSESSION_CLIENT_SERVER | DPNSESSION_NODPNSVR;
     dpAppDesc.guidApplication	= NET_GUID;
     dpAppDesc.pwszSessionName	= SessionNameUNICODE;
-	dpAppDesc.dwMaxPlayers		= (dwMaxPlayers == 0) ? 0 : (dwMaxPlayers+1);
 	dpAppDesc.pvApplicationReservedData	= session_options;
 	dpAppDesc.dwApplicationReservedDataSize = xr_strlen(session_options)+1;
 
@@ -261,10 +231,8 @@ BOOL IPureServer::Connect(LPCSTR options)
 		if (HostSuccess != S_OK)
 		{
 //			xr_string res = Debug.error2string(HostSuccess);
-#ifdef DEBUG
-				Msg("! IPureServer : port %d is BUSY!", psNET_Port);
-#endif	
-				psNET_Port++;
+			Msg("xrServer : trying port %d - FAILED!\n", psNET_Port++);
+//			psNET_Port++;
 		};
 	};
 	
@@ -327,6 +295,29 @@ HRESULT	IPureServer::net_Handler(u32 dwMessageType, PVOID pMessage)
 			bool bLocal				= (Pinfo->dwPlayerFlags&DPNPLAYER_LOCAL) != 0;
 			ClientID clientID; clientID.set(msg->dpnidPlayer);
 			new_client				(clientID, cname, bLocal);
+
+/*			
+			// register player
+			csPlayers.Enter			();
+			// setup structure
+			IClient*				P = client_Create();
+			VERIFY(P);
+			P->ID.set(msg->dpnidPlayer);
+			P->flags.bLocal			= (Pinfo->dwPlayerFlags&DPNPLAYER_LOCAL);
+			P->flags.bConnected		= TRUE;
+			string256				cname;
+			CHK_DX(WideCharToMultiByte(CP_ACP,0,Pinfo->pwszName,-1,cname,sizeof(cname),0,0));
+			P->Name					= cname;
+
+			net_Players.push_back	(P);
+			csPlayers.Leave			();
+			
+			// config client
+			SendTo_LL				(P->ID,&msgConfig,sizeof(msgConfig));
+
+			// gen message
+			OnCL_Connected			(P);
+*/			
         }
 		break;
 	case DPN_MSGID_DESTROY_PLAYER:
@@ -340,12 +331,11 @@ HRESULT	IPureServer::net_Handler(u32 dwMessageType, PVOID pMessage)
 				{
 					// gen message
 					net_Players[I]->flags.bConnected	= FALSE;
-					net_Players[I]->flags.bReconnect	= FALSE;
 					OnCL_Disconnected	(net_Players[I]);
 
-//					// real destroy
+					// real destroy
 					client_Destroy		(net_Players[I]);
-//					net_Players.erase	(net_Players.begin()+I);
+					net_Players.erase	(net_Players.begin()+I);
 					break;
 				}
 			csPlayers.Leave			();
@@ -429,7 +419,7 @@ void	IPureServer::SendTo_LL(ClientID ID/*DPNID ID*/, void* data, u32 size, u32 d
 		&desc,1,
 		dwTimeout,
 		0,&hAsync,
-		dwFlags | DPNSEND_COALESCE 
+		dwFlags
 		);
 	if (SUCCEEDED(_hr) || (DPNERR_CONNECTIONLOST==_hr))	return;
 
@@ -442,7 +432,7 @@ void	IPureServer::SendTo		(ClientID ID/*DPNID ID*/, NET_Packet& P, u32 dwFlags, 
 	NET_Packet	Compressed;
 	pCompress	(Compressed,P);
 
-	SendTo_LL	(ID,Compressed.B.data,Compressed.B.count,dwFlags,dwTimeout);
+	SendTo_LL(ID,Compressed.B.data,Compressed.B.count,dwFlags,dwTimeout);
 }
 
 void	IPureServer::SendBroadcast_LL(ClientID exclude, void* data, u32 size, u32 dwFlags)
@@ -506,13 +496,11 @@ void IPureServer::client_link_aborted	(DPNID ID)
 BOOL IPureServer::HasBandwidth			(IClient* C)
 {
 	u32	dwTime			= TimeGlobal(device_timer);
-	u32	dwInterval		= 0;
-	if (psNET_ServerUpdate != 0)
-		dwInterval = 1000/psNET_ServerUpdate;
+	u32	dwInterval		= 1000/psNET_ServerUpdate;
 	if	(psNET_Flags.test(NETFLAG_MINIMIZEUPDATES))	dwInterval	= 500;	// approx 2 times per second
 
 	HRESULT hr;
-	if (psNET_ServerUpdate != 0 && (dwTime-C->dwTime_LastUpdate)>dwInterval)
+	if ((dwTime-C->dwTime_LastUpdate)>dwInterval)	
 	{
 		// check queue for "empty" state
 		DWORD				dwPending;
@@ -525,23 +513,19 @@ BOOL IPureServer::HasBandwidth			(IClient* C)
 			return FALSE;
 		};
 
-		UpdateClientStatistic(C);
+		// Query network statistic for this client
+		DPN_CONNECTION_INFO	CI;
+		ZeroMemory			(&CI,sizeof(CI));
+		CI.dwSize			= sizeof(CI);
+		hr					= NET->GetConnectionInfo(C->ID.value(),&CI,0);
+		if (FAILED(hr))		return FALSE;
+		C->stats.Update		(CI);
+
 		// ok
 		C->dwTime_LastUpdate	= dwTime;
 		return TRUE;
 	}
 	return FALSE;
-}
-
-void	IPureServer::UpdateClientStatistic		(IClient* C)
-{
-	// Query network statistic for this client
-	DPN_CONNECTION_INFO	CI;
-	ZeroMemory			(&CI,sizeof(CI));
-	CI.dwSize			= sizeof(CI);
-	HRESULT hr					= NET->GetConnectionInfo(C->ID.value(),&CI,0);
-	if (FAILED(hr))		return;
-	C->stats.Update		(CI);
 }
 
 void	IPureServer::ClearStatistic	()
@@ -563,34 +547,31 @@ bool			IPureServer::DisconnectClient	(IClient* C)
 	return true;
 };
 
-bool IPureServer::DisconnectAddress(char* Address)
+bool			IPureServer::DisconnectAddress	(char* Address)
 {
 	IClient* PlayersToDisconnect[256];
 	u32 NumPlayers = 0;
-	IBannedClient tmpBanCl(Address, 0);
-
-	u32 it;
-	for (it = 0; it < net_Players.size(); it++)
+	IBannedClient	tmpBanCl(Address, 0);
+	for (u32 it = 0; it<net_Players.size(); it++)
 	{
 		char ClAddress[4];
 		GetClientAddress(net_Players[it]->ID, ClAddress);
 		if (tmpBanCl == ClAddress)
 		{
 			PlayersToDisconnect[NumPlayers++] = net_Players[it];
-		}
-	}
+		};
+	};
 
 	if (!NumPlayers) return false;
 
-	for (it = 0; it < NumPlayers; it++)
+	for (u32 it = 0; it<NumPlayers; it++)
 	{
 		DisconnectClient(PlayersToDisconnect[it]);
-	}
+	};
 	return true;
-}
+};
 
-
-bool			IPureServer::GetClientAddress	(IDirectPlay8Address* pClientAddress, char* Address, DWORD* pPort)
+bool			IPureServer::GetClientAddress	(IDirectPlay8Address* pClientAddress, char* Address)
 {
 	if (!Address) return false;
 	Address[0] = 0; Address[1] = 0; Address[2] = 0; Address[3] = 0;
@@ -611,19 +592,10 @@ bool			IPureServer::GetClientAddress	(IDirectPlay8Address* pClientAddress, char*
 		Address[i] = char(atol(a[i]));
 	};
 
-	if (pPort != NULL)
-	{
-		DWORD dwPort = 0;
-		DWORD dwPortSize = sizeof(dwPort);
-		DWORD dwPortDataType = DPNA_DATATYPE_DWORD;
-		CHK_DX(pClientAddress->GetComponentByName( DPNA_KEY_PORT, &dwPort, &dwPortSize, &dwPortDataType ));
-		*pPort = dwPort;
-	};
-
 	return true;
 };
 
-bool			IPureServer::GetClientAddress	(ClientID ID, char* Address, DWORD* pPort)
+bool			IPureServer::GetClientAddress	(ClientID ID, char* Address)
 {
 	if (!Address) return false;
 	Address[0] = 0; Address[1] = 0; Address[2] = 0; Address[3] = 0;
@@ -631,7 +603,7 @@ bool			IPureServer::GetClientAddress	(ClientID ID, char* Address, DWORD* pPort)
 	IDirectPlay8Address* pClAddr = NULL;
 	CHK_DX(NET->GetClientAddress(ID.value(), &pClAddr, 0));
 
-	return GetClientAddress(pClAddr, Address, pPort);
+	return GetClientAddress(pClAddr, Address);
 };
 
 IBannedClient*			IPureServer::GetBannedClient	(const char* Address)

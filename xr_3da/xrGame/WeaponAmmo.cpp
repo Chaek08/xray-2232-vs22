@@ -8,7 +8,7 @@
 #include "level_bullet_manager.h"
 #include "ai_space.h"
 #include "gamemtllib.h"
-#include "../xrNetServer/net_utils.h"
+#include "net_utils.h"
 
 CCartridge::CCartridge() 
 {

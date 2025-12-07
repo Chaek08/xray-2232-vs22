@@ -3,7 +3,6 @@
 #include "xrmessages.h"
 #include "hudmanager.h"
 #include "xrserver_objects.h"
-#include "Level.h"
 
 void xrServer::Perform_connect_spawn(CSE_Abstract* E, xrClientData* CL, NET_Packet& P)
 {
@@ -16,7 +15,6 @@ void xrServer::Perform_connect_spawn(CSE_Abstract* E, xrClientData* CL, NET_Pack
 
 	// Process
 	Flags16			save = E->s_flags;
-	//-------------------------------------------------
 	E->s_flags.set	(M_SPAWN_UPDATE,TRUE);
 	if (0==E->owner)	
 	{
@@ -38,7 +36,6 @@ void xrServer::Perform_connect_spawn(CSE_Abstract* E, xrClientData* CL, NET_Pack
 		E->Spawn_Write	(P,FALSE);
 		E->UPDATE_Write	(P);
 	}
-	//-----------------------------------------------------
 	E->s_flags			= save;
 	SendTo				(CL->ID,P,net_flags(TRUE,TRUE));
 	E->net_Processed	= TRUE;
@@ -98,7 +95,7 @@ void xrServer::Check_GameSpy_CDKey_Success			(IClient* CL)
 	Check_BuildVersion_Success(CL);	
 };
 
-BOOL	g_SV_Disable_Auth_Check = TRUE;
+BOOL	g_SV_Disable_Auth_Check = FALSE;
 
 bool xrServer::NeedToCheckClient_BuildVersion		(IClient* CL)	
 {

@@ -19,29 +19,26 @@ void CLevel::ClientReceive()
 		{
 		case M_SPAWN:
 			{
-				/*/
-				cl_Process_Spawn(*P);
-				/*/
-				game_events->insert		(*P);
-				if (g_bDebugEvents)		ProcessGameEvents();
-				//*/
-			}
-			break;
-		case M_EVENT:
-			game_events->insert		(*P);
-			if (g_bDebugEvents)		ProcessGameEvents();
-			break;
-		case M_EVENT_PACK:
-			NET_Packet	tmpP;
-			while (!P->r_eof())
-			{
-				tmpP.B.count = P->r_u8();
-                P->r(&tmpP.B.data, tmpP.B.count);
-				tmpP.timeReceive = P->timeReceive;
+				// Begin analysis
+				shared_str			s_name;
+				P->r_stringZ		(s_name);
 
-				game_events->insert		(tmpP);
-				if (g_bDebugEvents)		ProcessGameEvents();
-			};			
+				// Create DC (xrSE)
+				CSE_Abstract*		E	= F_entity_Create	(*s_name);
+				VERIFY				(E);
+				E->Spawn_Read		(*P);
+				if (E->s_flags.is(M_SPAWN_UPDATE))
+					E->UPDATE_Read	(*P);
+
+				//force object to be local for server client
+				if (OnServer())
+				{
+					E->s_flags.set(M_SPAWN_OBJECT_LOCAL, TRUE);
+				};
+
+				game_spawn_queue.push_back(E);
+				if (g_bDebugEvents)		ProcessGameSpawns();
+			}
 			break;
 		case M_UPDATE:
 			{
@@ -140,6 +137,21 @@ void CLevel::ClientReceive()
 		case M_SV_CONFIG_FINISHED:
 			game_configured			= TRUE;
 			break;
+		case M_EVENT:
+			game_events->insert		(*P);
+			if (g_bDebugEvents)		ProcessGameEvents();
+			break;
+		case M_EVENT_PACK:
+			NET_Packet	tmpP;
+			while (!P->r_eof())
+			{
+				tmpP.B.count = P->r_u8();
+                P->r(&tmpP.B.data, tmpP.B.count);
+
+				game_events->insert		(tmpP);
+				if (g_bDebugEvents)		ProcessGameEvents();
+			};			
+			break;
 		case M_MIGRATE_DEACTIVATE:	// TO:   Changing server, just deactivate
 			{
 				P->r_u16		(ID);
@@ -233,7 +245,6 @@ void CLevel::ClientReceive()
 			{
 				u8 Pause = P->r_u8();
 				Device.Pause(!(Pause == 0));
-				Sound->pause_emitters(!!Device.Pause());
 			}break;
 		case M_BULLET_CHECK_RESPOND:
 			{
@@ -258,10 +269,5 @@ void CLevel::ClientReceive()
 		net_msg_Release();
 	}
 
-//	if (!g_bDebugEvents) ProcessGameSpawns();
+	if (!g_bDebugEvents) ProcessGameSpawns();
 }
-
-void				CLevel::OnMessage				(void* data, u32 size)
-{	
-	IPureClient::OnMessage(data, size);	
-};

@@ -7,7 +7,7 @@
 #include "PhysicsShell.h"
 #include "GameMtlLib.h"
 #include "Physics.h"
-#include "../xrNetServer/net_utils.h"
+#include "net_utils.h"
 #include "xrMessages.h"
 
 void CPHCollisionDamageReceiver::BoneInsert(u16 id,float k)

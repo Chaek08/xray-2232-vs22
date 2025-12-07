@@ -7,14 +7,11 @@
 
 class xrGameSpyClientData	: public xrClientData
 {
-private:
-	typedef xrClientData inherited;
 public:
 	string64			m_pChallengeString;
 	bool				m_bCDKeyAuth;
 
 	xrGameSpyClientData			();
-	virtual void				Clear();
 	virtual ~xrGameSpyClientData	();
 };
 
