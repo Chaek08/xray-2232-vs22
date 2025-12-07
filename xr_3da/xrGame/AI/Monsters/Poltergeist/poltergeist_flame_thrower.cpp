@@ -4,7 +4,7 @@
 #include "../../../ai_object_location.h"
 #include "../../../level_navigation_graph.h"
 #include "../../../level.h"
-#include "../../../net_utils.h"
+#include "../../../../xrNetServer/net_utils.h"
 #include "../../../ai_space.h"
 
 #define FIND_POINT_ATTEMPT_COUNT	5

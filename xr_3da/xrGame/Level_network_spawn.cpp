@@ -5,10 +5,42 @@
 #include "net_queue.h"
 #include "ai_space.h"
 #include "game_level_cross_table.h"
+#include "level_navigation_graph.h"
 #include "client_spawn_manager.h"
 #include "../xr_object.h"
 
-void CLevel::g_cl_Spawn		(LPCSTR name, u8 rp, u16 flags)
+void CLevel::cl_Process_Spawn(NET_Packet& P)
+{
+	// Begin analysis
+	shared_str			s_name;
+	P.r_stringZ			(s_name);
+
+	// Create DC (xrSE)
+	CSE_Abstract*	E	= F_entity_Create	(*s_name);
+	R_ASSERT2(E, *s_name);
+
+	E->Spawn_Read		(P);
+	if (E->s_flags.is(M_SPAWN_UPDATE))
+		E->UPDATE_Read	(P);
+//-------------------------------------------------
+//	Msg ("M_SPAWN - %s[%d] - %d", *s_name, E->ID, E->ID_Parent);
+//-------------------------------------------------
+	//force object to be local for server client
+	if (OnServer())		{
+		E->s_flags.set(M_SPAWN_OBJECT_LOCAL, TRUE);
+	};
+
+	/*
+	game_spawn_queue.push_back(E);
+	if (g_bDebugEvents)		ProcessGameSpawns();
+	/*/
+	g_sv_Spawn					(E);
+
+	F_entity_Destroy			(E);
+	//*/
+};
+
+void CLevel::g_cl_Spawn		(LPCSTR name, u8 rp, u16 flags, Fvector pos)
 {
 	// Create
 	CSE_Abstract*		E	= F_entity_Create(name);
@@ -24,6 +56,7 @@ void CLevel::g_cl_Spawn		(LPCSTR name, u8 rp, u16 flags)
 	E->ID_Phantom		=	0xffff;
 	E->s_flags.assign	(flags);
 	E->RespawnTime		=	0;
+	E->o_Position		= pos;
 
 	// Send
 	NET_Packet			P;
@@ -34,17 +67,31 @@ void CLevel::g_cl_Spawn		(LPCSTR name, u8 rp, u16 flags)
 	F_entity_Destroy	(E);
 }
 
+#ifdef DEBUG
+BOOL	g_bMEMO;
+#endif
+
 void CLevel::g_sv_Spawn		(CSE_Abstract* E)
 {
+#ifdef DEBUG
+	u32							E_mem = 0;
+	if (g_bMEMO)	{
+		lua_gc					(ai().script_engine().lua(),LUA_GCCOLLECT,0);
+		lua_gc					(ai().script_engine().lua(),LUA_GCCOLLECT,0);
+		E_mem					= Memory.mem_usage();	
+		Memory.stat_calls		= 0;
+	}
+#endif
+	//-----------------------------------------------------------------
 //	CTimer		T(false);
 
 #ifdef DEBUG
-	//Msg					("* CLIENT: Spawn: %s, ID=%d", *E->s_name, E->ID);
+//	Msg					("* CLIENT: Spawn: %s, ID=%d", *E->s_name, E->ID);
 #endif
 
 	// Optimization for single-player only	- minimize traffic between client and server
 	if	(GameID()	== GAME_SINGLE)		psNET_Flags.set	(NETFLAG_MINIMIZEUPDATES,TRUE);
-	else									psNET_Flags.set	(NETFLAG_MINIMIZEUPDATES,FALSE);
+	else								psNET_Flags.set	(NETFLAG_MINIMIZEUPDATES,FALSE);
 
 	// Client spawn
 //	T.Start		();
@@ -62,26 +109,41 @@ void CLevel::g_sv_Spawn		(CSE_Abstract* E)
 		client_spawn_manager().callback(O);
 		//Msg			("--spawn--SPAWN: %f ms",1000.f*T.GetAsync());
 		if ((E->s_flags.is(M_SPAWN_OBJECT_LOCAL)) && (E->s_flags.is(M_SPAWN_OBJECT_ASPLAYER)))	{
-			SetEntity		(	O	);
-			SetControlEntity(	O	);
-			if (net_Syncronised)	net_Syncronize	();	// start sync-thread again
+			SetEntity			(O);
+			SetControlEntity	(O);
+//			if (net_Syncronised)net_Syncronize	();	// start sync-thread again
 		}
 
 		if (0xffff != E->ID_Parent)	
 		{
+			/*
 			// Generate ownership-event
 			NET_Packet			GEN;
 			GEN.w_begin			(M_EVENT);
-			GEN.w_u32			(Level().timeServer());//-NET_Latency);
+			GEN.w_u32			(E->m_dwSpawnTime);//-NET_Latency);
 			GEN.w_u16			(GE_OWNERSHIP_TAKE);
 			GEN.w_u16			(E->ID_Parent);
 			GEN.w_u16			(u16(O->ID()));
 			game_events->insert	(GEN);
-			if (g_bDebugEvents)	ProcessGameEvents();
+			/*/
+			NET_Packet	GEN;
+			GEN.write_start();
+			GEN.read_start();
+			GEN.w_u16			(u16(O->ID()));
+			cl_Process_Event(E->ID_Parent, GE_OWNERSHIP_TAKE, GEN);
+			//*/
 		}
 	}
 	//---------------------------------------------------------
 	Game().OnSpawn(O);
+	//---------------------------------------------------------
+#ifdef DEBUG
+	if (g_bMEMO) {
+		lua_gc					(ai().script_engine().lua(),LUA_GCCOLLECT,0);
+		lua_gc					(ai().script_engine().lua(),LUA_GCCOLLECT,0);
+		Msg						("* %20s : %d bytes, %d ops", *E->s_name,Memory.mem_usage()-E_mem, Memory.stat_calls );
+	}
+#endif
 }
 
 CSE_Abstract *CLevel::spawn_item		(LPCSTR section, const Fvector &position, u32 level_vertex_id, u16 parent_id, bool return_item)
@@ -91,7 +153,7 @@ CSE_Abstract *CLevel::spawn_item		(LPCSTR section, const Fvector &position, u32 
 	CSE_ALifeDynamicObject	*dynamic_object = smart_cast<CSE_ALifeDynamicObject*>(abstract);
 	if (dynamic_object && ai().get_level_graph()) {
 		dynamic_object->m_tNodeID	= level_vertex_id;
-		if (ai().get_cross_table())
+		if (ai().level_graph().valid_vertex_id(level_vertex_id) && ai().get_cross_table())
 			dynamic_object->m_tGraphID	= ai().cross_table().vertex(level_vertex_id).game_vertex_id();
 	}
 
@@ -127,8 +189,12 @@ void	CLevel::ProcessGameSpawns	()
 {
 	while (!game_spawn_queue.empty())
 	{
-		g_sv_Spawn					(game_spawn_queue.front());
-		F_entity_Destroy			(game_spawn_queue.front());
+		CSE_Abstract*	E			= game_spawn_queue.front();
+
+		g_sv_Spawn					(E);
+
+		F_entity_Destroy			(E);
+
 		game_spawn_queue.pop_front	();
 	}
 }

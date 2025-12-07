@@ -5319,25 +5319,7 @@
     <ClInclude Include="client_id.h">
       <Filter>Core\Common\NET Shared</Filter>
     </ClInclude>
-    <ClInclude Include="NET_Client.h">
-      <Filter>Core\Common\NET Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="NET_Compressor.h">
-      <Filter>Core\Common\NET Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="NET_Messages.h">
-      <Filter>Core\Common\NET Shared</Filter>
-    </ClInclude>
     <ClInclude Include="NET_Queue.h">
-      <Filter>Core\Common\NET Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="NET_Server.h">
-      <Filter>Core\Common\NET Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="NET_Shared.h">
-      <Filter>Core\Common\NET Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="NET_utils.h">
       <Filter>Core\Common\NET Shared</Filter>
     </ClInclude>
     <ClInclude Include="xrMessages.h">

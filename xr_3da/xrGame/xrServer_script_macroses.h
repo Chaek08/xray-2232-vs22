@@ -10,7 +10,7 @@
 
 #include "script_export_macroses.h"
 #include "xrEProps.h"
-#include "net_utils.h"
+#include "../xrNetServer/net_utils.h"
 
 //#define USE_WRITER_READER
 class CSE_Abstract;

@@ -26,7 +26,7 @@
 #include "ai_debug.h"
 #include "../igame_level.h"
 #include "level.h"
-#include "net_utils.h"
+#include "../xrNetServer/net_utils.h"
 #include "script_callback_ex.h"
 
 #define OBJECT_REMOVE_TIME 180000

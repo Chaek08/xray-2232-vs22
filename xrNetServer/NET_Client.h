@@ -67,15 +67,22 @@ public:
 	LPCSTR					net_SessionName			()	{ return *(net_Hosts.front().dpSessionName); }
 
 	// receive
-	IC NET_Packet*			net_msg_Retreive		()	{ return net_Queue.Retreive();	}
+	IC virtual	NET_Packet*			net_msg_Retreive		()	{ return net_Queue.Retreive();	}
 	IC void					net_msg_Release			()	{ net_Queue.Release();			}
 
 	// send
 	virtual	void			Send					(NET_Packet& P, u32 dwFlags=DPNSEND_GUARANTEED, u32 dwTimeout=0);
 	virtual void			OnMessage				(void* data, u32 size);
+	virtual void			OnInvalidHost			()	{};
+	virtual void			OnInvalidPassword		()	{};
+	virtual void			OnSessionFull			()	{};
+	virtual void			OnConnectRejected		()	{};
 	BOOL					net_HasBandwidth		();
 	void					ClearStatistic			();
 	IClientStatistic		GetStatistic			() const {return  net_Statistic; }
+	void					UpdateStatistic			();
+
+			bool			GetServerAddress		(char* pAddress, DWORD* pPort);
 	
 	// time management
 	IC u32					timeServer				()	{ return TimeGlobal(device_timer) + net_TimeDelta + net_TimeDelta_User; }
@@ -83,4 +90,6 @@ public:
 	IC u32					timeServer_Delta		()	{ return net_TimeDelta; }
 	IC void					timeServer_UserDelta	(s32 d)						{ net_TimeDelta_User=d;	}
 	IC void					timeServer_Correct		(u32 sv_time, u32 cl_time);
+
+	virtual	BOOL			net_IsSyncronised		();
 };

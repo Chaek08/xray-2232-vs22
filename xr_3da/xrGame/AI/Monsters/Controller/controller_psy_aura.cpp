@@ -3,7 +3,7 @@
 #include "../../../actor.h"
 #include "../../../ai_sounds.h"
 #include "../../../xrmessages.h"
-#include "../../../net_utils.h"
+#include "../../../../xrNetServer/net_utils.h"
 #include "../../../CustomMonster.h"
 
 CPsyAuraController::CPsyAuraController()

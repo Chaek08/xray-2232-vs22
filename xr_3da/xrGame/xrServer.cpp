@@ -22,10 +22,17 @@ xrClientData::xrClientData	():IClient(Device.GetTimerGlobal())
 	ps			= Level().Server->game->createPlayerState();
 	ps->clear();
 
+	Clear();
+}
+
+void	xrClientData::Clear()
+{
 	owner		= NULL;
 	net_Ready	= FALSE;
 	net_Accepted = FALSE;
-}
+	net_PassUpdates = TRUE;
+};
+
 xrClientData::~xrClientData()
 {
 	xr_delete(ps);
@@ -38,12 +45,17 @@ xrServer::xrServer():IPureServer(Device.GetTimerGlobal())
 
 xrServer::~xrServer()
 {
+	for (u32 it = 0; it < net_Players.size(); it++)
+		client_Destroy(net_Players[it]);
+
+	for (u32 it = 0; it < net_Players_disconnected.size(); it++)
+		client_Destroy(net_Players_disconnected[it]);
 }
 
 //--------------------------------------------------------------------
 xrClientData*	xrServer::ID_to_client		(ClientID ID)
 {
-	if (0==ID.value())			return 0;
+	if (0==ID.value())			return NULL;
 	csPlayers.Enter		();
 	for (u32 client=0; client<net_Players.size(); ++client)
 	{
@@ -52,8 +64,15 @@ xrClientData*	xrServer::ID_to_client		(ClientID ID)
 			return (xrClientData*)net_Players[client];
 		}
 	}
+	for (u32 client=0; client<net_Players_disconnected.size(); ++client)
+	{
+		if (net_Players_disconnected[client]->ID==ID)	{
+			csPlayers.Leave		();
+			return (xrClientData*)net_Players_disconnected[client];
+		}
+	}
 	csPlayers.Leave		();
-	return 0;
+	return NULL;
 }
 
 CSE_Abstract*	xrServer::ID_to_entity		(u16 ID)
@@ -73,18 +92,84 @@ IClient*	xrServer::client_Create		()
 void		xrServer::client_Replicate	()
 {
 }
+
+IClient*	xrServer::client_Find_Get			(ClientID ID)
+{
+	char	cAddress[4];
+	DWORD	dwPort;
+	if (GetClientAddress(ID, cAddress, &dwPort))
+	{		
+		for (u32 i=0; i<net_Players_disconnected.size(); i++)
+		{
+			IClient* CLX = net_Players_disconnected[i];
+			if ((CLX->m_cAddress[0] == cAddress[0]) &&
+				(CLX->m_cAddress[1] == cAddress[1]) &&
+				(CLX->m_cAddress[2] == cAddress[2]) &&
+				(CLX->m_cAddress[3] == cAddress[3])
+				)
+			{				
+				net_Players_disconnected.erase(net_Players_disconnected.begin()+i);
+
+				*((DWORD*)CLX->m_cAddress) = *((DWORD*)cAddress);	
+				CLX->m_dwPort = dwPort;
+				CLX->flags.bReconnect = TRUE;
+				Msg("Player found");
+				return CLX;
+			};
+		};
+	};
+
+	IClient* res = client_Create();
+	*((DWORD*)res->m_cAddress) = *((DWORD*)cAddress);	
+	res->m_dwPort = dwPort;
+	Msg("Player not found");
+	return res;
+};
+
+INT	g_sv_Client_Reconnect_Time = 0;
 void		xrServer::client_Destroy	(IClient* C)
 {
+	csPlayers.Enter	();
+
 	// Delete assosiated entity
 	// xrClientData*	D = (xrClientData*)C;
 	// CSE_Abstract* E = D->owner;
+	for (u32 DI=0; DI<net_Players_disconnected.size(); DI++)
+	{
+		if (net_Players_disconnected[DI] == C)
+		{
+			xr_delete(C);
+			net_Players_disconnected.erase(net_Players_disconnected.begin()+DI);
+			break;
+		};
+	};
 
-	xr_delete			(C);
+	for (u32 I=0; I<net_Players.size(); I++)
+	{
+		if (net_Players[I] == C)
+		{
+			if (!g_sv_Client_Reconnect_Time)
+			{
+				xr_delete(C);				
+			}
+			else
+			{
+				C->dwTime_LastUpdate = Device.dwTimeGlobal;
+				net_Players_disconnected.push_back(C);				
+				((xrClientData*)C)->Clear();
+			};
+			net_Players.erase	(net_Players.begin()+I);
+			break;
+		};
+	}
+
+	csPlayers.Leave();
 }
 
 //--------------------------------------------------------------------
 #ifdef DEBUG
 INT	g_Dump_Update_Write = 0;
+INT g_sv_SendUpdate = 0;
 #endif
 void xrServer::Update	()
 {
@@ -122,7 +207,11 @@ void xrServer::Update	()
 		// Initialize process and check for available bandwidth
 		xrClientData*	Client		= (xrClientData*) net_Players	[client];
 		if (!Client->net_Ready)		continue;		
-		if (!HasBandwidth(Client))	continue;
+		if (!HasBandwidth(Client) 
+#ifdef DEBUG
+			&& !g_sv_SendUpdate
+#endif
+			)	continue;	
 
 		// Send relevant entities to client
 		// CSE_Abstract*	Base	= Client->owner;
@@ -176,11 +265,22 @@ void xrServer::Update	()
 			SendTo			(Client->ID,Packet,net_flags(FALSE,TRUE));
 		}
 	}
+#ifdef DEBUG
+	g_sv_SendUpdate = 0;
+#endif	
 
 	if (game->sv_force_sync)	Perform_game_export();
 
 	VERIFY						(verify_entities());
-
+	//-----------------------------------------------------
+	//Remove any of long time disconnected players
+	for (u32 DI = 0; DI<net_Players_disconnected.size(); DI++)
+	{
+		IClient* CL = net_Players_disconnected[DI];
+		if (CL->dwTime_LastUpdate+g_sv_Client_Reconnect_Time*60000<Device.dwTimeGlobal)
+			client_Destroy(CL);
+	}
+	//-----------------------------------------------------
 	csPlayers.Leave	();
 }
 
@@ -228,13 +328,22 @@ u32 xrServer::OnMessage	(NET_Packet& P, ClientID sender)			// Non-Zero means bro
 	case M_CL_UPDATE:
 		{
 			xrClientData* CL		= ID_to_client	(sender);
-			if (CL)	CL->net_Ready	= TRUE;
+			if (!CL) break;
+			CL->net_Ready	= TRUE;
+			if (!CL->net_PassUpdates) break;
 			//-------------------------------------------------------------------
 			u32 ClientPing = CL->stats.getPing();
 			P.w_seek(P.r_tell()+2, &ClientPing, 4);
 			//-------------------------------------------------------------------
 			if (SV_Client) SendTo	(SV_Client->ID, P, net_flags(TRUE, TRUE));
 			VERIFY					(verify_entities());
+		}break;
+	case M_MOVE_PLAYERS_RESPOND:
+		{
+			xrClientData* CL		= ID_to_client	(sender);
+			if (!CL) break;
+			CL->net_Ready	= TRUE;
+			CL->net_PassUpdates = TRUE;
 		}break;
 	//-------------------------------------------------------------------
 	case M_CL_PING_CHALLENGE:
@@ -398,13 +507,7 @@ void			xrServer::entity_Destroy	(CSE_Abstract *&P)
 void			xrServer::Server_Client_Check	( IClient* CL )
 {
 	clients_Lock	();
-	/*
-	if (SV_Client && SV_Client->ID != CL->ID)
-	{
-		clients_Unlock	();
-		return;
-	};
-*/
+
 	if (SV_Client && SV_Client->ID == CL->ID)
 	{
 		if (!CL->flags.bConnected)
@@ -414,6 +517,13 @@ void			xrServer::Server_Client_Check	( IClient* CL )
 		clients_Unlock	();
 		return;
 	};
+
+	if (SV_Client && SV_Client->ID != CL->ID)
+	{
+		clients_Unlock	();
+		return;
+	};
+	
 
 	if (!CL->flags.bConnected) 
 	{

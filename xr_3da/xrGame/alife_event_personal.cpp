@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "net_utils.h"
+#include "../xrNetServer/net_utils.h"
 #pragma hdrstop
 
 #include "alife_event_personal.h"

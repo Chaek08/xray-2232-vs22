@@ -471,12 +471,6 @@
     <ClInclude Include="client_id.h">
       <Filter>Engine\Net</Filter>
     </ClInclude>
-    <ClInclude Include="NET_Compressor.h">
-      <Filter>Engine\Net</Filter>
-    </ClInclude>
-    <ClInclude Include="NET_utils.h">
-      <Filter>Engine\Net</Filter>
-    </ClInclude>
     <ClInclude Include="perlin.h">
       <Filter>Engine\Noise</Filter>
     </ClInclude>

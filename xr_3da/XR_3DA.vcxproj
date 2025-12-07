@@ -376,8 +376,6 @@
     <ClInclude Include="ISpatial.h" />
     <ClInclude Include="LightAnimLibrary.h" />
     <ClInclude Include="motion.h" />
-    <ClInclude Include="NET_Compressor.h" />
-    <ClInclude Include="NET_utils.h" />
     <ClInclude Include="ObjectAnimator.h" />
     <ClInclude Include="ParticleCustom.h" />
     <ClInclude Include="perlin.h" />
