@@ -220,7 +220,7 @@ function CKampManager:proceedRole(v)
 		-- Здесь нужно все вернуть на story_play
 		if self.story_last < self.story_max -1 then
 			self.kamp_state = "story"
-			for q,w in v.roles do
+			for q,w in pairs(v.roles) do
 				if w.name == v.current.ifnotend then
 					v.current = w
 					v.begin = time_global()
@@ -237,7 +237,7 @@ function CKampManager:proceedRole(v)
 	
 	-- Если у роли есть next, то выбираем ее.
 	if v.current and v.current.next then
-		for q,w in v.roles do
+		for q,w in pairs(v.roles) do
 			if w.name == v.current.next then
 				v.current = w
 				v.begin = time_global()
@@ -250,9 +250,9 @@ function CKampManager:proceedRole(v)
 
 	-- составляем список допустимых состояний, и выбираем из них рандомно одно	
 	local allowed = {}
-	for q,w in v.roles do
+	for q,w in pairs(v.roles) do
 		if w.allowed then
-			for qq,ww in w.allowed do
+			for qq,ww in pairs(w.allowed) do
 				if self.kamp_state == ww then
 					table.insert(allowed, w)
 					break
@@ -505,7 +505,7 @@ function CKampManager:updateNpc(npc)
 		self.kamp_state = "post_story"
 		if self.npc[npc_id].new == true then
 			self.npc[npc_id].new = false
-			for k,v in self.npc do
+			for k,v in pairs(self.npc) do
 				v.need_reac = true
 			end
 			local dep = sound_theme.theme[npc:id()][self.active_story].depence[self.story_last]

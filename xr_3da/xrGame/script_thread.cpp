@@ -25,13 +25,6 @@ extern "C" {
 
 const LPCSTR main_function = "console_command_run_string_main_thread_function";
 
-//void print_stack_(lua_State *L)
-//{
-//	Msg(" ");
-//	for (int i=0; lua_type(L, -i-1); i++)
-//		Msg("%2d : %s",-i-1,lua_typename(L, lua_type(L, -i-1)));
-//}
-
 CScriptThread::CScriptThread(LPCSTR caNamespaceName, bool do_string, bool reload)
 {
 	m_virtual_machine		= 0;
@@ -60,21 +53,10 @@ CScriptThread::CScriptThread(LPCSTR caNamespaceName, bool do_string, bool reload
 			}
 		}
 
-//		print_stack_		(ai().script_engine().lua());
-//		m_virtual_machine	= lua_newthread(ai().script_engine().lua());
-		m_virtual_machine	= lua_newcthread(ai().script_engine().lua(),0);
+
+		m_virtual_machine	= lua_newthread(ai().script_engine().lua());
 		VERIFY2				(lua(),"Cannot create new Lua thread");
-//		print_stack_		(ai().script_engine().lua());
-//		m_thread_reference	= luaL_ref(ai().script_engine().lua(),LUA_REGISTRYINDEX);
-//		print_stack_		(ai().script_engine().lua());
-		
-//		if (g_ca_stdout[0]) {
-//			fputc							(0,stderr);
-//			ai().script_engine().script_log	(ScriptStorage::eLuaMessageTypeInfo,"%s",g_ca_stdout);
-//			fflush							(stderr);
-//		}
-//		Msg					("lua get top %d",lua_gettop(ai().script_engine().lua()));
-//		print_stack_		(ai().script_engine().lua());
+		m_thread_reference	= luaL_ref(ai().script_engine().lua(),LUA_REGISTRYINDEX);
 		
 #ifdef DEBUG
 #	ifdef USE_DEBUGGER
@@ -118,13 +100,13 @@ bool CScriptThread::update()
 {
 	if (!m_active)
 		R_ASSERT2		(false,"Cannot resume dead Lua thread!");
-
+	
 	try {
 		ai().script_engine().current_thread	(this);
 		
 		int					l_iErrorCode = lua_resume(lua(),0);
 		
-		if (l_iErrorCode && (l_iErrorCode != LUA_YIELD)) {
+		if (l_iErrorCode) {
 			ai().script_engine().print_output(lua(),*script_name(),l_iErrorCode);
 #ifdef DEBUG
 			print_stack		(lua());
@@ -132,25 +114,21 @@ bool CScriptThread::update()
 			m_active		= false;
 		}
 		else {
-			if (l_iErrorCode != LUA_YIELD) {
-				THROW		(!m_current_stack_level);
+			if (l_iErrorCode && (l_iErrorCode != LUA_YIELD)) {
 				m_active	= false;
-#ifdef DEBUG
 				ai().script_engine().script_log	(ScriptStorage::eLuaMessageTypeInfo,"Script %s is finished!",*m_script_name);
-#endif
 			}
 			else {
 #ifdef DEBUG
 #	ifdef USE_DEBUGGER
-				if(!ai().script_engine().debugger() || !ai().script_engine().debugger()->Active() ) 
+				if(false || !ai().script_engine().debugger() || !ai().script_engine().debugger()->Active() ) 
 #	endif
 				{
-//					VERIFY2		(m_current_stack_level,*script_name());
-//					--m_current_stack_level;
+					VERIFY		(m_current_stack_level);
+					--m_current_stack_level;
 				}
 #endif
 				VERIFY2		(!lua_gettop(lua()),"Do not pass any value to coroutine.yield()!");
-				VERIFY		(lua()->status == LUA_YIELD);
 			}
 		}
 		
