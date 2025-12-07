@@ -1,0 +1,59 @@
+--[[------------------------------------------------------------------------------------------------
+База данных "живых" объектов, зон и рестрикторов, актёра
+Чугай Саша
+--------------------------------------------------------------------------------------------------]]
+
+--obj_by_id    = {}
+zone_by_name = {}
+sl_by_name   = {}
+storage      = {}
+sound		 = {}
+actor        = nil
+heli		 = {}
+camp_storage = {}
+
+function add_obj( obj )
+--	obj_by_id [obj:id()] = obj
+end
+
+function del_obj( obj )
+--	obj_by_id [obj:id()] = nil
+	storage   [obj:id()] = nil
+end
+
+function add_zone( zone )
+	zone_by_name[zone:name()] = zone
+	add_obj( zone )
+end
+
+function del_zone( zone )
+	zone_by_name[zone:name()] = nil
+	del_obj( zone )
+end
+
+function add_sl( sl )
+	sl_by_name[sl:name()] = sl
+	add_obj( sl )
+end
+
+function del_sl( sl )
+	sl_by_name[sl:name()] = nil
+	del_obj( sl )
+end
+
+function add_actor( obj )
+	actor = obj
+	add_obj( obj )
+end
+
+function del_actor()
+	del_obj( actor )
+	actor = nil
+end
+
+function add_heli(obj)	
+	heli[obj:id()] = obj
+end	
+function del_heli(obj)
+	heli[obj:id()] = nil
+end	

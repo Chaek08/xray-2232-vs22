@@ -156,7 +156,7 @@ function fract:availCurrent(job)
 		local jd = job.dependent
 
 		if jd then
-	   		for i, v in ipairs(self.Job) do
+	   		for i, v in pairs(self.Job) do
 	   			if v.section == jd then
 	   				return v.object ~= nil
 	   			end

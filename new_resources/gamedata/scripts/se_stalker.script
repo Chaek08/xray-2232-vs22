@@ -1,0 +1,72 @@
+--[[
+Изменения script_version:
+	2 - сохранение поля under_smart_terrain
+]]
+
+class "se_stalker"	(cse_alife_human_stalker)
+--------------------
+function se_stalker:__init (section) super (section)
+	self.ini = nil
+	self.spawner_present = false
+end
+--------------------
+function se_stalker:can_switch_offline ()
+	if self.under_smart_terrain then
+		return false
+	else
+		return cse_alife_human_stalker.can_switch_offline (self)
+	end
+end
+--------------------
+function se_stalker:can_switch_online ()
+	if self.under_smart_terrain then
+		return true
+	end
+
+	if self.ini == nil then
+		self.ini = self:spawn_ini ()
+		self.spawner_present = self.ini:section_exist ("spawner")
+	end
+
+	if self.ini == nil or self.spawner_present == false	then
+		return cse_alife_human_stalker.can_switch_online (self)
+	end
+    
+    if db.actor ~= nil and db.actor:alive () == false then
+       return self.online
+    end    
+    
+	if self.online == false then
+   	    -- если игрока нет, то в оффлайн
+        if db.actor == nil then 
+			return false 
+		end
+	    return xr_spawner.check_spawn (self) and cse_alife_human_stalker.can_switch_online (self)
+    else
+        if db.actor == nil then 
+			return true 
+		end
+        if xr_spawner.check_spawn (self) == true then 
+           return true
+        end
+        return false --cse_alife_human_stalker.can_switch_online (self)
+    end    	    
+
+	--return xr_spawner.check_spawn (self)
+end
+--------------------
+function se_stalker:STATE_Write (packet)
+--	log ("se_stalker::STATE_Write called!")
+	cse_alife_human_stalker.STATE_Write (self, packet)
+
+	packet:w_bool (self.under_smart_terrain == true)
+end
+--------------------
+function se_stalker:STATE_Read (packet, size)
+--	log ("se_stalker::STATE_Read called!")
+	cse_alife_human_stalker.STATE_Read (self, packet, size)
+
+	if self.script_version >= 2 then
+		self.under_smart_terrain = packet:r_bool()
+	end
+end

@@ -1,0 +1,112 @@
+--[[----------------------------------------------------------------------------------------------------------
+Боевая схема зомбированных сталкеров
+Чугай Саша
+
+Сделать:
+	- звуки
+------------------------------------------------------------------------------------------------------------]]
+
+local turn_threshold_cos = math.cos( math.rad( 10 ) )
+
+class "evaluator_combat_zombied" ( property_evaluator )
+
+function evaluator_combat_zombied:__init( name, storage ) super ( nil, name )
+	self.st = storage
+end
+
+function evaluator_combat_zombied:evaluate()
+	return db.storage[self.object:id()].script_combat_type == "zombied"
+end
+
+--------------------------------------------------------------------------------------------------------------
+
+class "action_zombie_shoot" ( action_base )
+
+function action_zombie_shoot:__init( name, storage )  super ( nil, name )
+	self.st = storage
+	self.t  = {}
+end
+
+function action_zombie_shoot:initialize()
+	action_base.initialize( self )
+
+    self.object:set_node_evaluator      ()
+    self.object:set_path_evaluator      ()
+    self.object:set_desired_direction   ()
+	self.object:set_detail_path_type    ( move.line )
+end
+
+function action_zombie_shoot:set_state( state, be )
+	self.t.look_object   = be
+	self.t.look_position = be:position()
+	state_mgr.set_state( self.object, state, nil, nil, self.t )
+end
+
+function action_zombie_shoot:execute()
+	action_base.execute( self )
+
+	local be = self.object:best_enemy()
+
+	self.object:set_path_type           ( game_object.level_path )
+
+	if self.object:position():distance_to_sqr( be:position() ) > 9 then
+		self.object:set_dest_level_vertex_id( be:level_vertex_id() )
+		self.object:set_desired_position    ( be:position() )
+
+		if self:can_shoot( be ) then
+			self:set_state( "patrol_fire", be )
+		else
+			self:set_state( "patrol",      be )
+		end
+    else
+--		self.object:set_dest_level_vertex_id( self.object:level_vertex_id() )
+--		self.object:set_desired_position    ( self.object:position() )
+
+		if self:can_shoot( be ) then
+			self:set_state( "guard_fire",  be )
+		else
+			self:set_state( "guard_na",    be )
+		end
+	end    
+end
+
+function action_zombie_shoot:finalize()
+	action_base.finalize( self )
+end
+
+function action_zombie_shoot:can_shoot( be )
+	if self.object:see( be ) then
+		local v1 = self.object:head_orientation()
+		local v2 = be:position():sub( self.object:position() )
+
+		-- повёрнут к врагу с погрешностью
+		local ang_cos = ( (v1.x*v2.x) + (v1.z*v2.z) ) / ( math.sqrt(v1.x*v1.x + v1.z*v1.z) * math.sqrt(v2.x*v2.x + v2.z*v2.z) )
+
+		self.object:info_clear()
+		self.object:info_add( tostring( math.deg( math.acos( ang_cos ) ) ) )
+
+		return ang_cos > turn_threshold_cos
+	else
+		return false
+	end
+end
+
+--------------------------------------------------------------------------------------------------------------
+
+function add_to_binder( npc, ini, st, planner )
+--[[	planner:add_evaluator( xr_evaluators_id.combat_zombied_base, evaluator_combat_zombied( "combat_zombied", st ) )
+
+	local action = action_zombie_shoot( "action_zombie_shoot", st )
+	action:add_precondition( world_property( xr_evaluators_id.combat_zombied_base, true  ) )
+	action:add_effect      ( world_property( stalker_ids.property_enemy,           false ) )
+	planner:add_action( xr_actions_id.combat_zombied_base, action )]]
+
+	planner:add_evaluator( xr_evaluators_id.combat_zombied_base, evaluator_combat_zombied( "combat_zombied", st ) )
+
+	local action = action_zombie_shoot( "action_zombie_shoot", st )
+	action:add_precondition( world_property( stalker_ids.property_alive,           true  ) )
+	action:add_precondition( world_property( xr_evaluators_id.combat_zombied_base, true  ) )
+	action:add_precondition( world_property( xr_evaluators_id.script_combat,       true  ) )
+	action:add_effect      ( world_property( stalker_ids.property_enemy,           false ) )
+	planner:add_action( xr_actions_id.combat_zombied_base, action )
+end

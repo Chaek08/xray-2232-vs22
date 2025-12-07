@@ -1,0 +1,4 @@
+function main ()
+    db.actor:give_info_portion ("mil_lukash_dead")
+    db.actor:set_character_community ("dolg", 0, 0)
+end
