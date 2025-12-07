@@ -12,6 +12,28 @@
 #include "script_thread.h"
 #include <stdarg.h>
 
+LPCSTR	file_header_old = "\
+local function script_name() \
+return \"%s\" \
+end \
+local this = {} \
+%s this %s \
+setmetatable(this, {__index = _G}) \
+setfenv(1, this) \
+		";
+
+LPCSTR	file_header_new = "\
+local function script_name() \
+return \"%s\" \
+end \
+local this = {} \
+this._G = _G \
+%s this %s \
+setfenv(1, this) \
+		";
+
+LPCSTR	file_header = 0;
+
 #ifndef ENGINE_BUILD
 #	include "script_engine.h"
 #	include "ai_space.h"
@@ -31,6 +53,29 @@
 #	include "script_debugger.h"
 #endif
 
+static void *lua_alloc_xr	(void *ud, void *ptr, size_t osize, size_t nsize) {
+  (void)ud;
+  (void)osize;
+  if (nsize == 0) {
+    xr_free	(ptr);
+    return	NULL;
+  }
+  else
+  return Memory.mem_realloc		(ptr, nsize);
+}
+
+extern "C"	{
+	void*	dlrealloc(void*, size_t);
+	void	dlfree(void*);
+};
+
+static void *lua_alloc_dl	(void *ud, void *ptr, size_t osize, size_t nsize) {
+  (void)ud;
+  (void)osize;
+  if (nsize == 0)	{	dlfree			(ptr);	 return	NULL;  }
+  else				return dlrealloc	(ptr, nsize);
+}
+
 CScriptStorage::CScriptStorage		()
 {
 	m_current_thread		= 0;
@@ -38,19 +83,34 @@ CScriptStorage::CScriptStorage		()
 	m_stack_is_ready		= false;
 #endif
 	m_virtual_machine		= 0;
-	m_virtual_machine		= lua_open();
+//	m_virtual_machine		= lua_newstate(lua_alloc_dl, NULL);		// switch to lua_alloc_XR - to track memory consumption
+	m_virtual_machine		= lua_newstate(lua_alloc_xr, NULL);		// switch to lua_alloc_XR - to track memory consumption
 	if (!m_virtual_machine) {
 		Msg					("! ERROR : Cannot initialize script virtual machine!");
-		return;
+		return				;
 	}
 	// initialize lua standard library functions 
 	luaopen_base			(lua()); 
 	luaopen_table			(lua());
 	luaopen_string			(lua());
 	luaopen_math			(lua());
+
 #ifdef DEBUG
 	luaopen_debug			(lua());
+//	luaopen_io				(lua());
 #endif
+
+#ifdef USE_JIT
+	m_jit					= (0==strstr(Core.Params,"-nojit"));
+	luaopen_jit				(lua());
+	luaJIT_setmode			(lua(),LUAJIT_MODE_ENGINE,m_jit?LUAJIT_MODE_ON:LUAJIT_MODE_OFF);
+	luaopen_coco			(lua());
+#endif
+
+	if (strstr(Core.Params,"-_g"))
+		file_header			= file_header_new;
+	else
+		file_header			= file_header_old;
 }
 
 CScriptStorage::~CScriptStorage		()
@@ -220,38 +280,32 @@ bool CScriptStorage::load_buffer	(CLuaVirtualMachine *L, LPCSTR caBuffer, size_t
 	if (caNameSpaceName && xr_strcmp("_G",caNameSpaceName)) {
 		string512		insert, a, b;
 
-		LPCSTR			header = "\
-local function script_name() \
-return \"%s\" \
-end \
-local this = {} \
-%s this %s \
-setmetatable(this, {__index = _G}) \
-setfenv(1, this) \
-		";
+		LPCSTR			header = file_header;
 
 		if (!parse_namespace(caNameSpaceName,a,b))
 			return		(false);
 		sprintf			(insert,header,caNameSpaceName,a,b);
-		size_t			str_len = xr_strlen(insert);
-		LPSTR			script = (LPSTR)xr_malloc((str_len + tSize)*sizeof(char));
+		u32				str_len = xr_strlen(insert);
+		LPSTR			script = xr_alloc<char>(str_len + tSize);
 		strcpy			(script,insert);
-		Memory.mem_copy	(script + str_len,caBuffer,u32(tSize));
-		try {
+		CopyMemory	(script + str_len,caBuffer,u32(tSize));
+//		try 
+		{
 			l_iErrorCode= luaL_loadbuffer(L,script,tSize + str_len,caScriptName);
 		}
-		catch(...) {
-			l_iErrorCode= LUA_ERRSYNTAX;
-		}
+//		catch(...) {
+//			l_iErrorCode= LUA_ERRSYNTAX;
+//		}
 		xr_free			(script);
 	}
 	else {
-		try {
+//		try
+		{
 			l_iErrorCode= luaL_loadbuffer(L,caBuffer,tSize,caScriptName);
 		}
-		catch(...) {
-			l_iErrorCode= LUA_ERRSYNTAX;
-		}
+//		catch(...) {
+//			l_iErrorCode= LUA_ERRSYNTAX;
+//		}
 	}
 
 	if (l_iErrorCode) {
@@ -284,28 +338,35 @@ bool CScriptStorage::do_file	(LPCSTR caScriptName, LPCSTR caNameSpaceName, bool 
 	}
 	FS.r_close		(l_tpFileReader);
 
-	if (bCall) {
-		int errFuncId = -1;
+	int errFuncId = -1;
 #ifdef USE_DEBUGGER
-		if( ai().script_engine().debugger() )
-		errFuncId = ai().script_engine().debugger()->PrepareLua(lua());
+	if( ai().script_engine().debugger() )
+	errFuncId = ai().script_engine().debugger()->PrepareLua(lua());
 #endif
-		int	l_iErrorCode = lua_pcall(lua(),0,0,(-1==errFuncId)?0:errFuncId); //new_Andy
+	if (0)	//.
+	{
+	    for (int i=0; lua_type(lua(), -i-1); i++)
+            Msg	("%2d : %s",-i-1,lua_typename(lua(), lua_type(lua(), -i-1)));
+	}
+
+	// because that's the first and the only call of the main chunk - there is no point to compile it
+	luaJIT_setmode	(lua(),LUAJIT_MODE_ENGINE,LUAJIT_MODE_OFF);							// Oles
+	int	l_iErrorCode = lua_pcall(lua(),0,0,(-1==errFuncId)?0:errFuncId);				// new_Andy
+	luaJIT_setmode	(lua(),LUAJIT_MODE_ENGINE, m_jit?LUAJIT_MODE_ON:LUAJIT_MODE_OFF);	// Oles
+
 #ifdef USE_DEBUGGER
-		if( ai().script_engine().debugger() )
-			ai().script_engine().debugger()->UnPrepareLua(lua(),errFuncId);
+	if( ai().script_engine().debugger() )
+		ai().script_engine().debugger()->UnPrepareLua(lua(),errFuncId);
 #endif
-		if (l_iErrorCode) {
+	if (l_iErrorCode) {
 
 #ifdef DEBUG
-			print_output(lua(),caScriptName,l_iErrorCode);
+		print_output(lua(),caScriptName,l_iErrorCode);
 #endif
-			lua_settop	(lua(),start);
-			return	(false);
-		}
+		lua_settop	(lua(),start);
+		return		(false);
 	}
-	else
-		lua_insert	(lua(),-4);
+
 	return			(true);
 }
 
@@ -471,6 +532,10 @@ void CScriptStorage::print_error(CLuaVirtualMachine *L, int iErrorCode)
 		}
 		case LUA_ERRSYNTAX : {
 			script_log (ScriptStorage::eLuaMessageTypeError,"SCRIPT SYNTAX ERROR");
+			break;
+		}
+		case LUA_YIELD : {
+			script_log (ScriptStorage::eLuaMessageTypeInfo,"Thread is yielded");
 			break;
 		}
 		default : NODEFAULT;

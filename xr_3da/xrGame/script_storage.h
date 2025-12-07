@@ -24,12 +24,13 @@ using namespace ScriptStorage;
 
 class CScriptStorage {
 private:
-	lua_State					*m_virtual_machine;
-	CScriptThread				*m_current_thread;
+	lua_State					*m_virtual_machine	;
+	CScriptThread				*m_current_thread	;
+	BOOL						m_jit				;
 
 #ifdef DEBUG
 public:
-	bool						m_stack_is_ready;
+	bool						m_stack_is_ready	;
 #endif
 
 protected:
@@ -52,8 +53,8 @@ public:
 			bool				load_buffer					(lua_State *L,		LPCSTR	caBuffer,			size_t	tSize,				LPCSTR	caScriptName, LPCSTR caNameSpaceName = 0);
 			bool				load_file_into_namespace	(LPCSTR	caScriptName,		LPCSTR	caNamespaceName,	bool	bCall);
 			bool				namespace_loaded			(LPCSTR	caName, bool remove_from_stack = true);
-			bool				object						(LPCSTR	caIdentifier,		int		type);
-			bool				object						(LPCSTR	caNamespaceName,	LPCSTR	caIdentifier,		int		type);
+			bool				object						(LPCSTR	caIdentifier, int type);
+			bool				object						(LPCSTR	caNamespaceName, LPCSTR	caIdentifier, int type);
 			luabind::object		name_space					(LPCSTR	namespace_name);
 			void				flush_log					();
 	static	int		__cdecl		script_log					(ELuaMessageType message,	LPCSTR	caFormat, ...);
