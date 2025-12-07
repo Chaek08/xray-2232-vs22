@@ -45,7 +45,8 @@ ALife::_STORY_ID	story_id	(LPCSTR story_id)
 u16 storyId2GameId	(ALife::_STORY_ID id)
 {
 	if(ai().get_alife()){ 
-		return ai().alife().story_objects().object(id, false)->ID;
+		CSE_ALifeDynamicObject* so = ai().alife().story_objects().object(id, true);
+		return (so)?so->ID:u16(-1);
 	}else{
 		u32 cnt = Level().Objects.o_count();
 		for(u32 it=0;it<cnt;++it){
