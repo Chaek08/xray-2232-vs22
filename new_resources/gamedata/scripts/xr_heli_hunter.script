@@ -11,7 +11,7 @@ local def_actor_dist = 20 * 20 -- расстояние, на котором игрок может быть атаков
 function get_nearest_heli(npc_position, attack_dist_sqr)
 	print_table(db.heli)
 	local heli = nil
-	for k,v in db.heli do
+	for k,v in pairs(db.heli) do
 		if v:position():distance_to_sqr(npc_position) <= attack_dist_sqr and
 		   (heli == nil or
 		   v:position():distance_to_sqr(npc_position) < heli:position():distance_to_sqr(npc_position))

@@ -132,7 +132,7 @@ function actor_binder:delayed_sleep_callback()
 		end
 
 		if self.st.punch.info then
-			for k, v in self.st.punch.info do
+			for k, v in pairs(self.st.punch.info) do
 				if self.object:dont_has_info(v) then
 					self.object:give_info_portion(v)
 				end

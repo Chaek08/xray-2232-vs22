@@ -176,7 +176,7 @@ function fract:updateJob()
 	end
 
 	-- освобождение npc с работ, не существующих в данном состоянии
---	for k,v in pairs(self.Job) do
+--	for k,v in ipairs(self.Job) do
 --		if not self:availState(v.state, self.state) then
 --			v.object = nil
 --		end
@@ -196,7 +196,7 @@ function fract:updateJob()
 	-- переназначение работ
 	jobN = 1
 
-	for k,v in pairs(self.Job) do
+	for k,v in ipairs(self.Job) do
 --		printf( "   %s", v.section )
 
 		-- проверка на доступность работы при текущем стейте
@@ -245,7 +245,7 @@ function fract:print()
 		printf("id: %d name: %s", k, v:name())
 	end
 	printf("Jobs:")
-	for k,v in pairs(self.Job) do
+	for k,v in ipairs(self.Job) do
 		printf("section: %s, prior %d", v.section, v.prior)
 		if v.object ~= nil then
 			printf("    ObjID: %d", v.object:id())
@@ -257,7 +257,7 @@ end
 
 function fract:get_capacity()
 	i = {}
-	for k,v in pairs(self.Job) do
+	for k,v in ipairs(self.Job) do
 		for kk,vv in pairs(v.state) do
 			if i[vv] == nil then i[vv] = 0 end
 			i[vv] = i[vv] + 1

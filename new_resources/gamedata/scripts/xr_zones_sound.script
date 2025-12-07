@@ -61,7 +61,7 @@ local sound_types = {
 -- включить в dest все элементы из src. Таблицы индексированы
 function table_include( dest, src )
 	if dest and src then
-		for i, v in src do
+		for i, v in pairs(src) do
 			table.insert( dest, v )
 		end
 	end
@@ -94,7 +94,7 @@ function zone_sound:__init( zone, binder, ini )
 	if ini:line_exist( sect, "type" ) then
 		local t = parse_names( ini:r_string( sect, "type" ) )
 
-		for i, v in t do
+		for i, v in pairs(t) do
 			if v == "random" then
 				self.random_pos = true
 			end

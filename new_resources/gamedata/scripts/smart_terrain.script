@@ -226,7 +226,7 @@ function se_smart_terrain:STATE_Write( packet )
 
 			print_table( self.Job )
 
-			for i, v in pairs(self.Job) do
+			for i, v in ipairs(self.Job) do
 				packet:w_u32( v )
 --				printf( "job i=%d", i )
 			end
