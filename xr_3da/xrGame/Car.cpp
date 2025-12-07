@@ -346,7 +346,7 @@ void CCar::UpdateCL				( )
 	CExplosive::UpdateCL();
 	if(m_car_weapon)m_car_weapon->UpdateCL();
 	if(Owner()) return;
-	UpdateEx			(DEFAULT_FOV);
+	UpdateEx			(g_fov);
 }
 
  void CCar::VisualUpdate(float fov)
