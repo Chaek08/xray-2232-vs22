@@ -295,11 +295,9 @@ void ProcessLoading				(RP_FUNC *f)
 	processed_idx			= 0;
 }
 
-ENGINE_API BOOL bShowPauseString			= TRUE;
 void	CRenderDevice::Pause				(BOOL bOn)
 {
 	if (!g_bBenchmark){
-		if(!Pause())						bShowPauseString = TRUE;
 		g_pauseMngr.Pause					(bOn);
 	}
 }

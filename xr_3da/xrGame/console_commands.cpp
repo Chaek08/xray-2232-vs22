@@ -115,20 +115,20 @@ public:
 };
 
 // console commands
-class CCC_Spawn : public IConsole_Command {
+class CCC_Spawn : public IConsole_Command
+{
 public:
-    CCC_Spawn(LPCSTR N) : IConsole_Command(N) { };
+	CCC_Spawn(LPCSTR N) : IConsole_Command(N)  { };
+	virtual void Execute(LPCSTR args) {
+		R_ASSERT(g_pGameLevel);
 
-    virtual void Execute(LPCSTR args) {
-        R_ASSERT(g_pGameLevel);
-
-    #ifndef DEBUG
-        if (GameID() != GAME_SINGLE)
+#ifndef	DEBUG
+		if (GameID() != GAME_SINGLE) 
 		{
-            Msg("For this game type entity-spawning is disabled.");
-            return;
-        };
-    #endif
+			Msg("For this game type entity-spawning is disabled.");
+			return;
+		};
+#endif
 
         char Name[128]; 
         Name[0] = 0;
@@ -150,14 +150,18 @@ public:
 
         for (int i = 0; i < count; ++i)
 		{
-            Level().g_cl_Spawn(Name, 0xff, M_SPAWN_OBJECT_LOCAL);
-        }
-    }
+            Fvector pos = Actor()->Position();
+            pos.y += 2.0f;
 
-    virtual void Info (TInfo& I) {
+            Level().g_cl_Spawn(Name, 0xff, M_SPAWN_OBJECT_LOCAL, pos);
+        }
+	}
+
+	virtual void	Info	(TInfo& I) {
         strcpy(I,"name [count]");
-    }
+	}
 };
+
 class CCC_Restart : public IConsole_Command {
 public:
 	CCC_Restart(LPCSTR N) : IConsole_Command(N)  { bEmptyArgsHandled = true; };

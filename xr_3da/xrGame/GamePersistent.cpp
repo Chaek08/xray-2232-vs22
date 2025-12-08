@@ -169,10 +169,10 @@ void CGamePersistent::WeathersUpdate()
 			// start effect
 			if ((FALSE==bIndoor) && (0==ambient_particles) && Device.dwTimeGlobal>ambient_effect_next_time){
 				CEnvAmbient::SEffect* eff			= env_amb->get_rnd_effect(); 
-				Environment.wind_gust_factor		= eff->wind_gust_factor;
-				ambient_effect_next_time			= Device.dwTimeGlobal + env_amb->get_rnd_effect_time();
-				ambient_effect_stop_time			= Device.dwTimeGlobal + eff->life_time;
 				if (eff){
+					Environment.wind_gust_factor	= eff->wind_gust_factor;
+					ambient_effect_next_time		= Device.dwTimeGlobal + env_amb->get_rnd_effect_time();
+					ambient_effect_stop_time		= Device.dwTimeGlobal + eff->life_time;
 					ambient_particles				= CParticlesObject::Create(eff->particles.c_str(),FALSE);
 					Fvector pos; pos.add			(Device.vCameraPosition,eff->offset); 
 					ambient_particles->play_at_pos	(pos);
@@ -186,10 +186,8 @@ void CGamePersistent::WeathersUpdate()
 			Environment.wind_gust_factor			= 0.f;
 		}
 		// if particles not playing - destroy
-		if (ambient_particles&&!ambient_particles->IsPlaying()){
-			ambient_particles->PSI_destroy			();
-			ambient_particles						= NULL;
-		}
+		if (ambient_particles&&!ambient_particles->IsPlaying())
+			CParticlesObject::Destroy(ambient_particles);
 	}
 }
 
@@ -247,15 +245,19 @@ float CGamePersistent::MtlTransparent(u32 mtl_idx)
 	return GMLib.GetMaterialByIdx((u16)mtl_idx)->fVisTransparencyFactor;
 }
 static BOOL bRestorePause = FALSE;
+static BOOL bEntryFlag		= TRUE;
 void CGamePersistent::OnAppActivate		()
 {
 	if(!bRestorePause)
 		Device.Pause(FALSE);
 
+	bEntryFlag = TRUE;
 }
 
 void CGamePersistent::OnAppDeactivate		()
 {
+	if(!bEntryFlag) return;
+
 	bRestorePause = FALSE;
 	if (!g_pGameLevel || (g_pGameLevel && Level().game && GameID()== GAME_SINGLE) )
 	{

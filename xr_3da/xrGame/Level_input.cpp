@@ -95,6 +95,7 @@ void CLevel::IR_OnKeyboardPress	(int key)
 		if (GameID() == GAME_SINGLE)
 		{
 			Device.Pause(!Device.Pause());
+			Sound->pause_emitters(!!Device.Pause());
 		}
 		else
 		if (OnServer())
