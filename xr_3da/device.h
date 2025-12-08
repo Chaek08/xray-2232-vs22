@@ -87,6 +87,7 @@ public:
 	float									fTimeGlobal;
 	u32										dwTimeDelta;
 	u32										dwTimeGlobal;
+	u32										dwTimeContinual;
 
 	// Cameras & projection
 	Fvector									vCameraPosition;
@@ -109,7 +110,9 @@ public:
 		m_bNearer			= FALSE;
 	};
 	void	Pause							(BOOL bOn);
-	IC BOOL	Pause							(){return g_pauseMngr.Paused();};
+	IC BOOL	Pause							()	{return g_pauseMngr.Paused();};
+
+	void PauseSound							(BOOL val);
 	// Scene control
 	void PreCache							(u32 frames);
 	BOOL Begin								();

@@ -21,7 +21,7 @@
 
 	void	free_vid_mode_list			();
 
-ENGINE_API CHW		HW;
+ENGINE_API CHW			HW;
 
 #ifdef DEBUG
 IDirect3DStateBlock9*	dwDebugSB = 0;
@@ -30,10 +30,10 @@ IDirect3DStateBlock9*	dwDebugSB = 0;
 void CHW::Reset		(HWND hwnd)
 {
 #ifdef DEBUG
-	_RELEASE		(dwDebugSB);
+	_RELEASE			(dwDebugSB);
 #endif
-	_RELEASE		(pBaseZB);
-	_RELEASE		(pBaseRT);
+	_RELEASE			(pBaseZB);
+	_RELEASE			(pBaseRT);
 
 #ifndef _EDITOR
 #ifndef DEDICATED_SERVER
@@ -55,13 +55,13 @@ void CHW::Reset		(HWND hwnd)
 		HRESULT _hr							= HW.pDevice->Reset	(&DevPP);
 		if (SUCCEEDED(_hr))					break;
 		Msg		("! ERROR: [%dx%d]: %s",DevPP.BackBufferWidth,DevPP.BackBufferHeight,Debug.error2string(_hr));
-		Sleep								(100);
+		Sleep	(100);
 	}
 
-	R_CHK			(pDevice->GetRenderTarget			(0,&pBaseRT));
-	R_CHK			(pDevice->GetDepthStencilSurface	(&pBaseZB));
+	R_CHK				(pDevice->GetRenderTarget			(0,&pBaseRT));
+	R_CHK				(pDevice->GetDepthStencilSurface	(&pBaseZB));
 #ifdef DEBUG
-	R_CHK			(pDevice->CreateStateBlock			(D3DSBT_ALL,&dwDebugSB));
+	R_CHK				(pDevice->CreateStateBlock			(D3DSBT_ALL,&dwDebugSB));
 #endif
 #ifndef _EDITOR
 	updateWindowProps	(hwnd);
@@ -72,12 +72,18 @@ xr_token*				vid_mode_token = NULL;
 
 void CHW::CreateD3D	()
 {
-	hD3D9            			= LoadLibrary("d3d9.dll");
+#ifndef DEDICATED_SERVER
+	LPCSTR		_name			= "d3d9.dll";
+#else
+	LPCSTR		_name			= "d3d9-null.dll";
+#endif
+
+	hD3D9            			= LoadLibrary(_name);
 	R_ASSERT2	           	 	(hD3D9,"Can't find 'd3d9.dll'\nPlease install latest version of DirectX before running this program");
     typedef IDirect3D9 * WINAPI _Direct3DCreate9(UINT SDKVersion);
     _Direct3DCreate9* createD3D	= (_Direct3DCreate9*)GetProcAddress(hD3D9,"Direct3DCreate9");	R_ASSERT(createD3D);
     this->pD3D 					= createD3D( D3D_SDK_VERSION );
-    R_ASSERT					(this->pD3D);
+    R_ASSERT2					(this->pD3D,"Please install DirectX 9.0c");
 }
 void CHW::DestroyD3D()
 {
@@ -174,7 +180,12 @@ void		CHW::CreateDevice		(HWND m_hWnd)
 	CreateD3D				();
 
 	// General - select adapter and device
+#ifdef DEDICATED_SERVER
+	BOOL  bWindowed			= TRUE;
+#else
 	BOOL  bWindowed			= !psDeviceFlags.is(rsFullscreen);
+#endif
+
 	DevAdapter				= D3DADAPTER_DEFAULT;
 	DevT					= Caps.bForceGPU_REF?D3DDEVTYPE_REF:D3DDEVTYPE_HAL;
 
@@ -197,7 +208,10 @@ void		CHW::CreateDevice		(HWND m_hWnd)
 	// Display the name of video board
 	D3DADAPTER_IDENTIFIER9	adapterID;
 	R_CHK	(pD3D->GetAdapterIdentifier(DevAdapter,0,&adapterID));
-	Msg		("* GPU: %s",adapterID.Description);
+	Msg		("* GPU [vendor:%X]-[device:%X]: %s",adapterID.VendorId,adapterID.DeviceId,adapterID.Description);
+
+	Caps.id_vendor	= adapterID.VendorId;
+	Caps.id_device	= adapterID.DeviceId;
 
 	// Retreive windowed mode
 	D3DDISPLAYMODE mWindowed;
@@ -273,7 +287,7 @@ void		CHW::CreateDevice		(HWND m_hWnd)
 	// Depth/stencil
 	P.EnableAutoDepthStencil= TRUE;
     P.AutoDepthStencilFormat= fDepth;
-	P.Flags					= 0;
+	P.Flags					= 0;	//. D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
 
 	// Refresh rate
 	P.PresentationInterval	= D3DPRESENT_INTERVAL_IMMEDIATE;

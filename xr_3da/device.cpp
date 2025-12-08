@@ -13,10 +13,16 @@
 #include <d3dx9.h>
 #pragma warning(default:4995)
 
+#include "x_ray.h"
+
 ENGINE_API CRenderDevice Device;
 ENGINE_API BOOL g_bRendering = FALSE; 
+
+BOOL g_bLoaded = FALSE;
+
 BOOL CRenderDevice::Begin	()
 {
+#ifndef DEDICATED_SERVER
 	HW.Validate		();
 	HRESULT	_hr		= HW.pDevice->TestCooperativeLevel();
     if (FAILED(_hr))
@@ -41,6 +47,7 @@ BOOL CRenderDevice::Begin	()
 	if (HW.Caps.SceneMode)	overdrawBegin	();
 	FPU::m24r	();
 	g_bRendering = 	TRUE;
+#endif
 	return		TRUE;
 }
 
@@ -54,10 +61,13 @@ void CRenderDevice::Clear	()
 		));
 }
 
+extern void CheckPrivilegySlowdown		( );
+
 void CRenderDevice::End		(void)
 {
+#ifndef DEDICATED_SERVER
+
 	VERIFY	(HW.pDevice);
-	g_bRendering = 	FALSE;
 
 	if (HW.Caps.SceneMode)	overdrawEnd		();
 
@@ -73,6 +83,7 @@ void CRenderDevice::End		(void)
 		}
 	}
 
+	g_bRendering = 	FALSE;
 	// end scene
 	RCache.OnFrameEnd	();
     CHK_DX(HW.pDevice->EndScene());
@@ -80,6 +91,7 @@ void CRenderDevice::End		(void)
 	HRESULT _hr		= HW.pDevice->Present( NULL, NULL, NULL, NULL );
 	if				(D3DERR_DEVICELOST==_hr)	return;			// we will handle this later
 	R_ASSERT2		(SUCCEEDED(_hr),	"Presentation failed. Driver upgrade needed?");
+#endif
 }
 
 
@@ -98,7 +110,7 @@ void 			mt_Thread	(void *ptr)	{
 		mt_Thread_marker			= Device.dwFrame;
 		for (u32 pit=0; pit<Device.seqParallel.size(); pit++)
 			Device.seqParallel[pit]	();
-		Device.seqParallel.clear	();
+		Device.seqParallel.clear_not_free	();
 		Device.seqFrameMT.Process	(rp_Frame);
 
 		// now we give control to device - signals that we are ended our work
@@ -119,7 +131,8 @@ void CRenderDevice::PreCache	(u32 amount)
 
 void CRenderDevice::Run			()
 {
-    MSG				msg;
+	g_bLoaded		= FALSE;
+	MSG				msg;
     BOOL			bGotMsg;
 	Log				("Starting engine...");
 	thread_name		("X-RAY Primary thread");
@@ -147,6 +160,8 @@ void CRenderDevice::Run			()
 
 	seqAppStart.Process			(rp_AppStart);
 
+	CHK_DX(HW.pDevice->Clear(0,0,D3DCLEAR_TARGET,D3DCOLOR_XRGB(0,0,0),1,0));
+
 	while( WM_QUIT != msg.message  )
     {
         bGotMsg = PeekMessage( &msg, NULL, 0U, 0U, PM_REMOVE );
@@ -158,7 +173,7 @@ void CRenderDevice::Run			()
         else
         {
 			if (bReady) {
-				FrameMove						( );
+					FrameMove						( );
 
 				// Precache
 				if (dwPrecacheFrame)
@@ -183,7 +198,7 @@ void CRenderDevice::Run			()
 				// Release start point - allow thread to run
 				EnterCriticalSection		(&mt_csLeave);
 				LeaveCriticalSection		(&mt_csEnter);
-
+#ifndef DEDICATED_SERVER
 				Statistic.RenderTOTAL_Real.FrameStart	();
 				Statistic.RenderTOTAL_Real.Begin		();
 				if (bActive)							{
@@ -195,9 +210,9 @@ void CRenderDevice::Run			()
 					}
 				}
 				Statistic.RenderTOTAL_Real.End			();
-				Statistic.RenderTOTAL_Real.FrameEnd		();
+				Statistic.RenderTOTAL_Real.FrameEnd	();
 				Statistic.RenderTOTAL.accum	= Statistic.RenderTOTAL_Real.accum;
-
+#endif
 				// *** Suspend threads
 				// Capture startup point
 				// Release end point - allow thread to wait for startup point
@@ -207,9 +222,9 @@ void CRenderDevice::Run			()
 				// Ensure, that second thread gets chance to execute anyway
 				if (dwFrame!=mt_Thread_marker)			{
 					for (u32 pit=0; pit<Device.seqParallel.size(); pit++)
-						Device.seqParallel[pit]	();
-					Device.seqParallel.clear	();
-					seqFrameMT.Process	(rp_Frame);
+						Device.seqParallel[pit]			();
+					Device.seqParallel.clear_not_free	();
+					seqFrameMT.Process					(rp_Frame);
 				}
 			} else {
 				Sleep		(100);
@@ -217,7 +232,6 @@ void CRenderDevice::Run			()
 			if (!bActive)	Sleep	(1);
         }
     }
-
 	seqAppEnd.Process		(rp_AppEnd);
 
 	// Stop Balance-Thread
@@ -228,10 +242,12 @@ void CRenderDevice::Run			()
 	DeleteCriticalSection	(&mt_csLeave);
 }
 
+void ProcessLoading(RP_FUNC *f);
 void CRenderDevice::FrameMove()
 {
 	dwFrame			++;
 
+	dwTimeContinual	= TimerMM.GetElapsed_ms	();
 	if (psDeviceFlags.test(rsConstantFPS))	{
 		// 20ms = 50fps
 		fTimeDelta		=	0.020f;			
@@ -240,26 +256,55 @@ void CRenderDevice::FrameMove()
 		dwTimeGlobal	+=	20;
 	} else {
 		// Timer
-
 		float fPreviousFrameTime = Timer.GetElapsed_sec(); Timer.Start();	// previous frame
 		fTimeDelta = 0.1f * fTimeDelta + 0.9f*fPreviousFrameTime;			// smooth random system activity - worst case ~7% error
 		if (fTimeDelta>.1f) fTimeDelta=.1f;									// limit to 15fps minimum
 
 		if(Pause())		fTimeDelta = 0.0f;
 
-		u64	qTime		= TimerGlobal.GetElapsed_clk();
-		fTimeGlobal		= float(qTime)*CPU::cycles2seconds;
-		dwTimeGlobal	= u32((qTime*u64(1000))/CPU::cycles_per_second);
-		dwTimeDelta		= iFloor(fTimeDelta*1000.f+0.5f);
+//		u64	qTime		= TimerGlobal.GetElapsed_clk();
+		fTimeGlobal		= TimerGlobal.GetElapsed_sec(); //float(qTime)*CPU::cycles2seconds;
+		u32	_old_global	= dwTimeGlobal;
+		dwTimeGlobal	= TimerGlobal.GetElapsed_ms	();	//u32((qTime*u64(1000))/CPU::cycles_per_second);
+		dwTimeDelta		= dwTimeGlobal-_old_global;
 	}
 
 	// Frame move
 	Statistic.EngineTOTAL.Begin	();
-	seqFrame.Process			(rp_Frame);
+	if(!g_bLoaded) 
+		ProcessLoading				(rp_Frame);
+	else
+		seqFrame.Process			(rp_Frame);
 	Statistic.EngineTOTAL.End	();
 }
 
-void	CRenderDevice::Pause							(BOOL bOn)
+void ProcessLoading				(RP_FUNC *f)
 {
-	if (!g_bBenchmark)	g_pauseMngr.Pause(bOn);
+	static u32 processed_idx			= 0;
+	u32 tm = Device.TimerAsyncMM		();
+
+	xr_vector<_REG_INFO>& R		= Device.seqFrame.R;
+    if (R.empty())				return;
+
+	for (; processed_idx<R.size(); processed_idx++)	{
+		f(R[processed_idx].Object);
+		if	(Device.TimerAsyncMM() > tm+50) return;
+	}
+
+	g_bLoaded				= TRUE;
+	processed_idx			= 0;
+}
+
+ENGINE_API BOOL bShowPauseString			= TRUE;
+void	CRenderDevice::Pause				(BOOL bOn)
+{
+	if (!g_bBenchmark){
+		if(!Pause())						bShowPauseString = TRUE;
+		g_pauseMngr.Pause					(bOn);
+	}
+}
+
+void	CRenderDevice::PauseSound			(BOOL val)
+{
+	::Sound->pause_emitters					(val);
 }
