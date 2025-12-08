@@ -231,6 +231,17 @@ void  CHUDManager::RenderUI()
 	if (psHUD_Flags.is(HUD_CROSSHAIR|HUD_CROSSHAIR_RT) && !bAlready)	
 		m_pHUDCursor->Render();
 
+	CGameFont* pFont = Font().pFontStat;
+	if( Device.Pause() && !g_pGamePersistent->m_pMainUI->IsActive() ){
+		float sz		= pFont->GetSize();
+		pFont->SetSize	(32);
+		pFont->SetColor	(0x80FF0000	);
+		pFont->OutSet	(Device.dwWidth/2.0f-(pFont->SizeOf("Game paused")/2.0f),Device.dwHeight/2.0f);
+		pFont->OutNext	("Game paused");
+		pFont->OnRender	();
+		pFont->SetSize	(sz);
+	}
+
 	// Recalc new scale factor if resolution was changed
 //	OnDeviceCreate();
 }

@@ -117,16 +117,6 @@ void CStats::Show()
 	float		f_base_size	= 8;	//F.GetSize();
 				F.SetSize	(f_base_size);
 
-	if( Device.Pause() && !g_pGamePersistent->m_pMainUI->IsActive() ){
-		float sz		= pFont->GetSize();
-		pFont->SetSize	(32);
-		pFont->SetColor	(0x80FF0000	);
-		pFont->OutSet	(Device.dwWidth/2.0f-(pFont->SizeOf("Game paused")/2.0f),Device.dwHeight/2.0f);
-		pFont->OutNext	("Game paused");
-		pFont->OnRender	();
-		pFont->SetSize	(sz);
-	}
-
 	// Show them
 	if (psDeviceFlags.test(rsStatistic))
 	{
