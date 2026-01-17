@@ -19,6 +19,7 @@ using namespace luabind;
 typedef xr_vector<std::pair<shared_str,int> >	STORY_PAIRS;
 extern	LPCSTR GAME_CONFIG;
 LPCSTR	_INVALID_STORY_ID = "INVALID_STORY_ID";
+STORY_PAIRS										story_ids;
 
 CALifeSimulator *alife			()
 {
@@ -42,7 +43,16 @@ CSE_ALifeDynamicObject *alife_story_object	(const CALifeSimulator *self, ALife::
 	return			(self->story_objects().object(id,true));
 }
 
-void generate_story_ids	(STORY_PAIRS &result)
+template <typename _id_type>
+void generate_story_ids		(
+	STORY_PAIRS &result,
+	_id_type	INVALID_ID,
+	LPCSTR		section_name,
+	LPCSTR		INVALID_ID_STRING,
+	LPCSTR		invalid_id_description,
+	LPCSTR		invalid_id_redefinition,
+	LPCSTR		duplicated_id_description
+)
 {
 	result.clear			();
 
@@ -55,24 +65,24 @@ void generate_story_ids	(STORY_PAIRS &result)
     LPCSTR					N,V;
 	u32 					k;
 	shared_str				temp;
-    LPCSTR					section = "story_ids";
+    LPCSTR					section = section_name;
     R_ASSERT				(Ini->section_exist(section));
 
 	for (k = 0; Ini->r_line(section,k,&N,&V); ++k) {
 		temp				= Ini->r_string_wb(section,N);
 		
-		R_ASSERT3			(!strchr(*temp,' '),"Invalid story id description (contains spaces)!",*temp);
-		R_ASSERT2			(xr_strcmp(*temp,_INVALID_STORY_ID),"INVALID_STORY_ID redifinition!");
+		R_ASSERT3			(!strchr(*temp,' '),invalid_id_description,*temp);
+		R_ASSERT2			(xr_strcmp(*temp,INVALID_ID_STRING),invalid_id_redefinition);
 		
 		STORY_PAIRS::const_iterator	I = result.begin();
 		STORY_PAIRS::const_iterator	E = result.end();
 		for ( ; I != E; ++I)
-			R_ASSERT3		((*I).first != temp,"Duplicated story id description!",*temp);
+			R_ASSERT3		((*I).first != temp,duplicated_id_description,*temp);
 		
 		result.push_back	(std::make_pair(*temp,atoi(N)));
 	}
 
-	result.push_back		(std::make_pair(_INVALID_STORY_ID,INVALID_STORY_ID));
+	result.push_back		(std::make_pair(INVALID_ID_STRING,INVALID_ID));
 
     xr_delete				(Ini);
 }
@@ -92,8 +102,16 @@ void CALifeSimulator::script_register(lua_State *L)
 		def("alife",						&alife)
 	];
 
-	STORY_PAIRS					story_ids;
-	generate_story_ids			(story_ids);
+	VERIFY					(story_ids.empty());
+	generate_story_ids		(
+		story_ids,
+		INVALID_STORY_ID,
+		"story_ids",
+		"INVALID_STORY_ID",
+		"Invalid story id description (contains spaces)!",
+		"INVALID_STORY_ID redifinition!",
+		"Duplicated story id description!"
+	);
 
 	luabind::class_<class_exporter<CALifeSimulator> >	instance("story_ids");
 
