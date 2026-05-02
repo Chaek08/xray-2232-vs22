@@ -868,7 +868,6 @@
     <ClInclude Include="GameSpy\GameSpy_QR2_callbacks.h" />
     <ClInclude Include="GameTask.h" />
     <ClInclude Include="GameTaskDefs.h" />
-    <ClInclude Include="GametaskManager.h" />
     <ClInclude Include="game_base.h" />
     <ClInclude Include="game_base_kill_type.h" />
     <ClInclude Include="game_base_space.h" />
@@ -2081,7 +2080,6 @@
     <ClCompile Include="GameSpy\GameSpy_QR2.cpp" />
     <ClCompile Include="GameSpy\GameSpy_QR2_callbacks.cpp" />
     <ClCompile Include="GameTask.cpp" />
-    <ClCompile Include="GametaskManager.cpp" />
     <ClCompile Include="game_base.cpp" />
     <ClCompile Include="game_base_script.cpp" />
     <ClCompile Include="game_cl_artefacthunt.cpp" />

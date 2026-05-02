@@ -537,53 +537,86 @@ LPCSTR CScriptGameObject::snd_character_profile_sect () const
 	return pInventoryOwner->SpecificCharacter().SndConfigSect();
 }
 
-#include "GameTaskManager.h"
 ETaskState CScriptGameObject::GetGameTaskState	(LPCSTR task_id, int objective_num)
 {
-/*	CActor* pActor = smart_cast<CActor*>(&object());
+	CActor* pActor = smart_cast<CActor*>(&object());
+//	VERIFY(pActor);
 	if (!pActor) {
 		ai().script_engine().script_log		(ScriptStorage::eLuaMessageTypeError,"GetGameTaskState available only for actor");
 		return eTaskStateDummy;
 	}
-*/
-	shared_str shared_name = task_id;
-	CGameTask* t= Actor()->GameTaskManager().HasGameTask(shared_name);
-	if(NULL==t) return eTaskStateDummy;
 
-	if ((std::size_t)objective_num >= t->m_Objectives.size()) {
+	const GAME_TASK_VECTOR* tasks =  pActor->game_task_registry->registry().objects_ptr();
+	if(!tasks) 
+		return eTaskStateDummy;
+
+	GAME_TASK_VECTOR::const_iterator it = tasks->begin();
+	for(;
+			tasks->end() != it; it++)
+	{
+		if((*it).task_id == task_id) 
+			break;
+	}
+	
+	if(tasks->end() == it) 
+		return eTaskStateDummy;
+
+//	R_ASSERT3((std::size_t)objective_num < (*it).states.size(), "wrong objective num", task_id);
+	if ((std::size_t)objective_num >= (*it).states.size()) {
 		ai().script_engine().script_log		(ScriptStorage::eLuaMessageTypeError,"wrong objective num", task_id);
 		return eTaskStateDummy;
 	}
-	return t->m_Objectives[objective_num].TaskState();
 
+	return (*it).states[objective_num];
 }
 
 void CScriptGameObject::SetGameTaskState	(ETaskState state, LPCSTR task_id, int objective_num)
 {
-	shared_str shared_name = task_id;
-	Actor()->GameTaskManager().SetTaskState(shared_name, objective_num, state);
-}
-
-STasks CScriptGameObject::GetAllGameTasks()
-{
-	STasks	tasks;
-
-	GameTasks& _tasks = Actor()->GameTaskManager().GameTasks();
-	for(GameTasks::iterator it = _tasks.begin(); it!=_tasks.end();++it){
-		tasks.m_all_tasks.resize(tasks.Size()+1);
-		STask& t = tasks.m_all_tasks.back();
-		t.m_name	= (*it).task_id;
-		t.m_state	= (*it).game_task->m_Objectives[0].TaskState();
-		u32 sub_num = (*it).game_task->m_Objectives.size();
-		for(u32 i=0; i<sub_num;++i){
-			t.m_objectives.resize(t.m_objectives.size()+1);
-			STaskObjective& to	= t.m_objectives.back();
-			to.m_name			= (*it).game_task->m_Objectives[i].description;
-			to.m_state			= (*it).game_task->m_Objectives[i].TaskState();
-		}
-	
+	CActor* pActor = smart_cast<CActor*>(&object());
+//	VERIFY(pActor);
+	if (!pActor) {
+		ai().script_engine().script_log		(ScriptStorage::eLuaMessageTypeError,"SetGameTaskState available only for actor");
+		return;
 	}
-	return tasks;
+
+//	TASK_INDEX task_index = CGameTask::IdToIndex(task_id);
+//	R_ASSERT3(task_index != NO_TASK, "wrong task id", task_id);
+	
+	GAME_TASK_VECTOR& tasks =  pActor->game_task_registry->registry().objects();
+	GAME_TASK_VECTOR::iterator it = tasks.begin();
+	for(;
+			tasks.end() != it; it++)
+	{
+		if((*it).task_id == task_id) 
+			break;
+	}
+
+	if (tasks.end() == it) {
+		ai().script_engine().script_log		(ScriptStorage::eLuaMessageTypeError,"actor does not has task", task_id);
+		return;
+	}
+	if ((std::size_t)objective_num >= (*it).states.size()) {
+		ai().script_engine().script_log		(ScriptStorage::eLuaMessageTypeError,"wrong objective num", task_id);
+		return;
+	}
+
+//	R_ASSERT3(tasks.end() != it, "actor does not has task", task_id);
+//	R_ASSERT3((std::size_t)objective_num < (*it).states.size(), "wrong objective num", task_id);
+	(*it).states[objective_num] = state;
+	
+	if(0 == objective_num){//setState for task and all sub-tasks
+		TASK_STATE_IT iit =(*it).states.begin();
+		for(;iit!=(*it).states.end();++iit)
+			if( (*iit)==eTaskStateInProgress )
+				(*iit)=state;
+	}
+
+	//если мы устанавливаем финальное состояние для основного задания, то
+	//запомнить время выполнения
+	if(0 == objective_num && eTaskStateCompleted == state || eTaskStateFail == state)
+	{
+		(*it).finish_time = Level().GetGameTime();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

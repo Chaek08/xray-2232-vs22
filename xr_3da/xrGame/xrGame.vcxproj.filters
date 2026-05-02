@@ -4866,9 +4866,6 @@
     <ClInclude Include="GameTaskDefs.h">
       <Filter>Core\Client\Objects\info &amp; dialogs\game tasks</Filter>
     </ClInclude>
-    <ClInclude Include="GametaskManager.h">
-      <Filter>Core\Client\Objects\info &amp; dialogs\game tasks</Filter>
-    </ClInclude>
     <ClInclude Include="encyclopedia_article.h">
       <Filter>Core\Client\Objects\info &amp; dialogs\encyclopedia</Filter>
     </ClInclude>
@@ -7821,9 +7818,6 @@
       <Filter>Core\Client\Objects\info &amp; dialogs</Filter>
     </ClCompile>
     <ClCompile Include="GameTask.cpp">
-      <Filter>Core\Client\Objects\info &amp; dialogs\game tasks</Filter>
-    </ClCompile>
-    <ClCompile Include="GametaskManager.cpp">
       <Filter>Core\Client\Objects\info &amp; dialogs\game tasks</Filter>
     </ClCompile>
     <ClCompile Include="encyclopedia_article.cpp">

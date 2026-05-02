@@ -201,7 +201,6 @@ public:
 	//работа с заданиями
 			ETaskState			GetGameTaskState	(LPCSTR task_id, int objective_num);
 			void				SetGameTaskState	(ETaskState state, LPCSTR task_id, int objective_num);
-			STasks				GetAllGameTasks		();
 
 			bool				SendPdaMessage		(EPdaMsg pda_msg, CScriptGameObject* pForWho);
 			

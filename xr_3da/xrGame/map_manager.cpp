@@ -7,7 +7,6 @@
 #include "relation_registry.h"
 #include "GameObject.h"
 #include "map_location.h"
-#include "GameTaskManager.h"
 #include "xrServer.h"
 
 struct FindLocationBySpotID{
@@ -245,7 +244,5 @@ void CheckUserLocation		(CMapLocation* ml)
 {
 	if(false == ml->IsUserDefined()) return;
 	Level().Server->FreeID(ml->ObjectID(),Device.TimerAsync());
-
-	Actor()->GameTaskManager().RemoveUserTask(ml);
 
 }

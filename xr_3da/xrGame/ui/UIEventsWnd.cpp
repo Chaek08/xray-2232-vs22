@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "UIEventsWnd.h"
 #include "UIFrameWindow.h"
 #include "UIFrameLineWnd.h"
@@ -14,7 +14,6 @@
 #include <boost/bind.hpp>
 #include "../level.h"
 #include "../actor.h"
-#include "../gametaskmanager.h"
 #include "../gametask.h"
 #include "../map_manager.h"
 #include "../map_location.h"
@@ -117,46 +116,45 @@ void CUIEventsWnd::Reload					()
 		m_flags.set(flNeedReload,TRUE );
 }
 
+xr_vector<CGameTask*> m_Tasks;
+
 void CUIEventsWnd::ReloadList				(bool bClearOnly)
 {
-	m_ListWnd->Clear	();
-	if(bClearOnly)		return;
+    m_ListWnd->Clear();
+    if (bClearOnly) return;
 
-	if(!Actor()) return;
+    CActor* pActor = smart_cast<CActor*>(Level().CurrentEntity());
+    if (!pActor || !pActor->game_task_registry->registry().objects_ptr()) return;
 
-	GameTasks& tasks = Actor()->GameTaskManager().GameTasks();
-	GameTasks::iterator it =  tasks.begin();
-	CGameTask* task = NULL;
-	for(;it!=tasks.end();++it){
-		task = (*it).game_task;
-		R_ASSERT(task);
-		R_ASSERT(task->m_Objectives.size() > 0);
+    for (GAME_TASK_VECTOR::const_iterator it =
+            pActor->game_task_registry->registry().objects().begin();
+         it != pActor->game_task_registry->registry().objects().end(); ++it)
+    {
+        CGameTask task;
+        task.Init(*it);
 
-		if( !Filter(task) ) continue;
+        if (task.ObjectivesNum() == 0)
+            continue;
 
-		CStringTable		stbl;
-		CUITaskItem			*pTaskItem = NULL;
-		if(task->m_Objectives[0].TaskState()==eTaskUserDefined){
-			VERIFY(task->m_Objectives.size()==1);
-			pTaskItem = xr_new<CUIUserTaskItem>(this);
-			pTaskItem->SetGameTask			(task, 0);
-			m_ListWnd->AddWindow			(pTaskItem);
-		}else
-		for (u32 i = 0; i < task->m_Objectives.size(); ++i)
-		{
-			if(i==0)
-				pTaskItem = xr_new<CUITaskRootItem>(this);
-			else
-				pTaskItem = xr_new<CUITaskSubItem>(this);
+        if (!Filter(&task))
+            continue;
 
-			pTaskItem->SetGameTask			(task, i);
-			m_ListWnd->AddWindow			(pTaskItem);
-		}
+        CUITaskItem* pTaskItem = NULL;
 
-	}
+        for (u32 i = 0; i < task.ObjectivesNum(); ++i)
+        {
+            if (i == 0)
+                pTaskItem = xr_new<CUITaskRootItem>(this);
+            else
+                pTaskItem = xr_new<CUITaskSubItem>(this);
 
+            pTaskItem->SetGameTask(&task, i);
+            m_ListWnd->AddWindow(pTaskItem);
+        }
+    }
 }
-/*int i=0;*/
+
+
 void CUIEventsWnd::Show					(bool status)
 {
 /*	if(i==0&&status){
@@ -181,12 +179,13 @@ void CUIEventsWnd::Show					(bool status)
 
 bool CUIEventsWnd::Filter(CGameTask* t)
 {
-	ETaskState task_state = t->m_Objectives[0].TaskState();
-	
-	return (m_currFilter==eActiveTask			&& task_state==eTaskStateInProgress )||
-			(m_currFilter==eAccomplishedTask	&& task_state==eTaskStateCompleted )||
-			(m_currFilter==eFailedTask			&& task_state==eTaskStateFail )||
-			(m_currFilter==eOwnTask				&& task_state==eTaskUserDefined );
+    if (!t || t->ObjectivesNum() == 0) return false;
+
+    ETaskState task_state = t->ObjectiveState(0);
+
+    return (m_currFilter == eActiveTask        && task_state == eTaskStateInProgress) ||
+           (m_currFilter == eAccomplishedTask && task_state == eTaskStateCompleted) ||
+           (m_currFilter == eFailedTask       && task_state == eTaskStateFail);
 }
 
 
@@ -207,55 +206,73 @@ bool CUIEventsWnd::GetDescriptionMode		()
 	return !!m_flags.test(flMapMode);
 }
 
-void CUIEventsWnd::ShowDescription			(CGameTask* t, int idx)
+void CUIEventsWnd::ShowDescription(CGameTask* t, int idx)
 {
-	SGameTaskObjective& o		= t->Objective(idx);
-	if(GetDescriptionMode()){//map
-		CMapLocation* ml = o.HasMapLocation();
-		if(ml&&ml->SpotEnabled())
-			m_UIMapWnd->SetTargetMap(ml->LevelName(), ml->Position(), true);
-	}else{//articles
-		m_UITaskInfoWnd->ClearAll	();
+    if (!t || idx < 0 || idx >= (int)t->ObjectivesNum())
+        return;
 
-	if(Actor()->encyclopedia_registry->registry().objects_ptr())
-	{
-		string512	need_group;
-		if(0==idx){
-			strcpy(need_group,*t->m_ID);
-		}else
-		if(o.article_key.size()){
-			sprintf(need_group, "%s/%s", *t->m_ID, *o.article_key);
-		}else{
-			sprintf(need_group, "%s/%d", *t->m_ID, idx);
-		}
+    SGameTaskObjective& o = t->data()->m_Objectives[idx];
 
-		ARTICLE_VECTOR::const_iterator it = Actor()->encyclopedia_registry->registry().objects_ptr()->begin();
-		for(; it != Actor()->encyclopedia_registry->registry().objects_ptr()->end(); it++)
-		{
-			if (ARTICLE_DATA::eTaskArticle == it->article_type)
-			{
-				CEncyclopediaArticle	A;
-				A.Load					(it->article_id);
+    if (GetDescriptionMode())
+    {
+        CMapLocation* ml = nullptr;
 
-				if(strstr(*(A.data()->group), need_group)== *(A.data()->group))
-					m_UITaskInfoWnd->AddArticle(&A);
-			}else
-			if(o.article_id.size() && it->article_id ==o.article_id){
-				CEncyclopediaArticle			A;
-				A.Load							(it->article_id);
-				m_UITaskInfoWnd->AddArticle		(&A);
-			}
-		}
-	}
-	}
+        // логика получения map location
+     
 
-	int sz = m_ListWnd->GetSize		();
-	for(int i=0; i<sz;++i){
-		CUITaskItem* itm = (CUITaskItem*)m_ListWnd->GetItem(i);
-		if((itm->GameTask()==t) && (itm->ObjectiveIdx()==idx) )	
-			itm->MarkSelected	(true);
-		else
-			itm->MarkSelected	(false);
-	}
+        if (ml && ml->SpotEnabled())
+            m_UIMapWnd->SetTargetMap(ml->LevelName(), ml->Position(), true);
+    }
+    else
+    {
+        m_UITaskInfoWnd->ClearAll();
 
+        if (Actor()->encyclopedia_registry->registry().objects_ptr())
+        {
+            string512 need_group;
+
+            if (idx == 0)
+            {
+                strcpy(need_group, *t->Id());
+            }
+            else
+            {
+                sprintf(need_group, "%s/%d", *t->Id(), idx);
+            }
+
+            ARTICLE_VECTOR::const_iterator it =
+                Actor()->encyclopedia_registry->registry().objects_ptr()->begin();
+
+            for (; it != Actor()->encyclopedia_registry->registry().objects_ptr()->end(); ++it)
+            {
+                if (ARTICLE_DATA::eTaskArticle == it->article_type)
+                {
+                    CEncyclopediaArticle A;
+                    A.Load(it->article_id);
+
+                    if (strstr(*(A.data()->group), need_group) == *(A.data()->group))
+                        m_UITaskInfoWnd->AddArticle(&A);
+                }
+                else if (o.article_id.size() && it->article_id == o.article_id)
+                {
+                    CEncyclopediaArticle A;
+                    A.Load(it->article_id);
+                    m_UITaskInfoWnd->AddArticle(&A);
+                }
+            }
+        }
+    }
+
+    // выделение
+    int sz = m_ListWnd->GetSize();
+    for (int i = 0; i < sz; ++i)
+    {
+        CUITaskItem* itm = (CUITaskItem*)m_ListWnd->GetItem(i);
+
+        if ((xr_strcmp(*itm->GameTask()->Id(), *t->Id()) == 0) &&
+            (itm->ObjectiveIdx() == idx))
+            itm->MarkSelected(true);
+        else
+            itm->MarkSelected(false);
+    }
 }

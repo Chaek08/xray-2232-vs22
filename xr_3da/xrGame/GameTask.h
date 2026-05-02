@@ -1,81 +1,83 @@
+///////////////////////////////////////////////////////////////
+// GameTask.h
+// Класс игрового задания задания
+///////////////////////////////////////////////////////////////
+
 #pragma once
+
+#include "ui/xrXMLParser.h"
+
+#include "shared_data.h"
+#include "xml_str_id_loader.h"
 
 #include "encyclopedia_article_defs.h"
 #include "GameTaskDefs.h"
-#include "script_space.h"
 
-class CGameTaskManager;
-class CMapLocation;
-class CGameTask;
+class  CGameObject;
 
+
+//подцель задания 
 struct SGameTaskObjective 
 {
-	friend struct SGameTaskKey;
-	friend class CGameTaskManager;
-private:
-	ETaskState				task_state;
-	CGameTask*				parent;
-	int						idx;
-	void					SendInfo		(xr_vector<shared_str>&);
-	void					CallAllFuncs	(xr_vector<luabind::functor<bool> >& v);
-	bool					CheckInfo		(xr_vector<shared_str>&);
-	bool					CheckFunctions	(xr_vector<luabind::functor<bool> >& v);
-	void					SetTaskState	(ETaskState new_state);
-public:
-	SGameTaskObjective		(CGameTask* parent, int idx);
-	shared_str				description;
-	ARTICLE_ID				article_id;
-	shared_str				map_hint;
-	shared_str				map_location;
-	u16						object_id;
-	shared_str				article_key;
-	CMapLocation*			HasMapLocation		();
-	ETaskState				TaskState			()	{return task_state;};
-	ETaskState				UpdateState			();
-
+	SGameTaskObjective() {}
+	//текстовое описание
+	shared_str description;
+	//index статьи в энциклопедии или дневнике (если есть)
+	ARTICLE_ID article_id;
 	//прикрипленная иконка
-	shared_str							icon_texture_name;
-	Frect								icon_rect;//x,y,w,h
-	bool								def_location_enabled;
-//complete/fail stuff
-	xr_vector<shared_str>				m_completeInfos;
-	xr_vector<shared_str>				m_failInfos;
-	xr_vector<shared_str>				m_infos_on_complete;
-	xr_vector<shared_str>				m_infos_on_fail;
-	xr_vector<luabind::functor<bool> >	m_complete_lua_functions;
-	xr_vector<luabind::functor<bool> >	m_fail_lua_functions;
-
-	xr_vector<luabind::functor<bool> >	m_lua_functions_on_complete;
-	xr_vector<luabind::functor<bool> >	m_lua_functions_on_fail;
-
+	shared_str icon_texture_name;
+	int icon_x, icon_y, icon_width, icon_height;
 };
 
-DEFINE_VECTOR(SGameTaskObjective, OBJECTIVE_VECTOR, OBJECTIVE_VECTOR_IT);
+//////////////////////////////////////////////////////////////////////////
+// SPhraseDialogData: данные для представления диалога
+//////////////////////////////////////////////////////////////////////////
+struct SGameTaskData : CSharedResource
+{
+	SGameTaskData ();
+	virtual ~SGameTaskData ();
 
-class CGameTask
+	DEFINE_VECTOR(SGameTaskObjective, OBJECTIVE_VECTOR, OBJECTIVE_VECTOR_IT);
+	OBJECTIVE_VECTOR m_Objectives;
+	//название задания
+	shared_str title;
+};
+
+
+class CGameTask: public CSharedClass<SGameTaskData, TASK_ID, false>,
+				 public CXML_IdToIndex<TASK_ID, int, CGameTask>
 {
 private:
-							CGameTask				(const CGameTask&){}; //disable copy ctor
-protected:
-	void					Load					(const TASK_ID& id);
+	typedef CSharedClass<SGameTaskData, TASK_ID, false>	inherited_shared;
+	typedef CXML_IdToIndex<TASK_ID, int, CGameTask>	id_to_index;
+
+	friend id_to_index;
 public:
-							CGameTask				(const TASK_ID& id);
+			CGameTask	();
+	virtual ~CGameTask	();
 
-	bool					HighlightedSpotOnMap	(int objective_id);					
-	void					HighlightSpotOnMap		(int objective_id, bool bHighlight);
-	
-	bool					HasMapLocations			();
-	void					ShowLocations			(bool bShow);
-	bool					ShownLocations			();
-	
-	SGameTaskObjective&		Objective				(int objectice_id)	{return m_Objectives[objectice_id];};
+//	virtual void Load	(TASK_ID	str_id);
+	virtual void Load	(TASK_ID  id);
 
-	shared_str				m_ID;
-	shared_str				m_Title;
-	OBJECTIVE_VECTOR		m_Objectives;
-	ALife::_TIME_ID			m_ReceiveTime;
-	ALife::_TIME_ID			m_FinishTime;
-	
+	virtual void Init	(const TASK_DATA&  data);
+
+protected:
+	TASK_ID					m_TaskId;
+	void					load_shared			(LPCSTR);
+	static void				InitXmlIdToIndex	();
+public:
+	const TASK_ID			Id				() {return m_TaskId;}
+	SGameTaskData*			data			() { VERIFY(inherited_shared::get_sd()); return inherited_shared::get_sd();}
+
+public:
+	virtual u32				ObjectivesNum	();
+	virtual shared_str		ObjectiveDesc	(u32 index);
+	virtual shared_str		ObjectiveTitle	() {return data()->title;}
+	virtual ARTICLE_ID		ObjectiveArticle(u32 index);
+	virtual ETaskState		ObjectiveState  (u32 index);
+	virtual void			ObjectiveIcon	(u32 index, shared_str& tex_name, int& x, int& y, int& width, int& height);
+	//инициализируется значениями из реестра актера
+	TASK_STATE_VECTOR	m_ObjectiveStates;
+	ALife::_TIME_ID		m_ReceiveTime;
+	ALife::_TIME_ID		m_FinishTime;
 };
-
-void ChangeStateCallback	(shared_str& task_id, int obj_id, ETaskState state);

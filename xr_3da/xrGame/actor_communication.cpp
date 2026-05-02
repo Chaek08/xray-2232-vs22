@@ -37,9 +37,9 @@
 #include "game_object_space.h"
 #include "script_callback_ex.h"
 #include "encyclopedia_article.h"
-#include "GameTaskManager.h"
 #include "GameTaskdefs.h"
 #include "infoportion.h"
+#include "ui/UIEventsWnd.h"
 
 class RemoveByIDPred
 {
@@ -109,10 +109,39 @@ void CActor::AddGameTask			 (const CInfoPortion* info_portion) const
 	VERIFY(info_portion);
 
 	if(info_portion->GameTasks().empty()) return;
+
+	GAME_TASK_VECTOR& task_vector = game_task_registry->registry().objects();
+
+	std::size_t old_size = task_vector.size();
+
 	for(TASK_ID_VECTOR::const_iterator it = info_portion->GameTasks().begin();
 		it != info_portion->GameTasks().end(); it++)
 	{
-		GameTaskManager().GiveGameTaskToActor(*it);
+
+		GAME_TASK_VECTOR::const_iterator it1 = task_vector.begin();
+		for(;
+			it1 != task_vector.end(); it1++)
+		{
+			if(*it == (*it1).task_id)
+				break;
+		}
+
+		if(it1 == task_vector.end())
+			task_vector.push_back(TASK_DATA(*it, Level().GetGameTime()));
+	}
+
+	//установить флажок необходимости прочтения тасков в PDA
+	if(old_size != task_vector.size())
+		if(HUD().GetUI())
+			HUD().GetUI()->UIMainIngameWnd->SetFlashIconState(CUIMainIngameWnd::efiPdaTask, true);
+
+	if( HUD().GetUI() ){
+		CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
+		if(pGameSP) 
+		{
+			if (pGameSP)
+				pGameSP->PdaMenu->UIEventsWnd->Reload();
+		}
 	}
 }
 

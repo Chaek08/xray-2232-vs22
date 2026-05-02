@@ -122,13 +122,13 @@ void CUIJobItem::SetGameTask(CGameTask* gt, int obj_idx)
 { 
 	m_GameTask = gt;
 	m_TaskObjectiveIdx = obj_idx;
-	if(m_GameTask->m_Objectives[m_TaskObjectiveIdx].article_id.size())
+	if(m_GameTask->data()->m_Objectives[m_TaskObjectiveIdx].article_id.size())
 		UIAdditionalMaterials.Show(true);
 }
 
 ARTICLE_ID CUIJobItem::GetAdditionalMaterialID	() const
 {
-	return m_GameTask->m_Objectives[m_TaskObjectiveIdx].article_id;
+	return m_GameTask->data()->m_Objectives[m_TaskObjectiveIdx].article_id;
 }
 
 void CUIJobItem::Update()

@@ -27,7 +27,6 @@
 #include <dinput.h>				//remove me !!!
 #include "../../xr_input.h"		//remove me !!!
 
-#include "../gameTaskmanager.h" //remove me !!!
 #include "../gameTask.h"		//remove me !!!
 #include "../actor.h"			//remove me !!!
 
@@ -602,6 +601,7 @@ void CUIMapWnd::OnToolActorClicked		(CUIWindow*, void*)
 
 void CUIMapWnd::AddUserSpot			(CUILevelMap* lm)
 {
+/*
 	VERIFY(m_flags.test(lmUserSpotAdd) );
 
 	Fvector2 cursor_pos = GetUICursor()->GetPos();
@@ -611,15 +611,16 @@ void CUIMapWnd::AddUserSpot			(CUILevelMap* lm)
 	Fvector2 p =					lm->ConvertLocalToReal(cursor_pos);
 	Fvector pos;
 	pos.set							(p.x, 0.0f, p.y);
-	shared_str spot					= "user"; 
+	shared_str spot					= "user";
 	CMapLocation* ml				= Level().MapManager().AddUserLocation(spot, lm->MapName(), pos);
 	CGameTask* t					= Actor()->GameTaskManager().GiveGameTaskToActor("user_task",false);
-	t->m_Objectives[0].object_id	= ml->ObjectID();
-	t->m_Objectives[0].map_location	= spot;
+	t->data()->m_Objectives[0].object_id	= ml->ObjectID();
+	t->data()->m_Objectives[0].map_location	= spot;
 	Actor()->GameTaskManager().SetTaskState(t, 0, eTaskUserDefined);
 
 	m_flags.set						(lmUserSpotAdd, FALSE);
 	m_ToolBar[eAddSpot]->SetButtonMode(CUIButton::BUTTON_NORMAL);
+*/
 }
 
 bool is_in(const Frect& b1, const Frect& b2){

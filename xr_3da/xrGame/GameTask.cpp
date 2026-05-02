@@ -1,374 +1,170 @@
+///////////////////////////////////////////////////////////////
+// GameTask.cpp
+// Класс игрового задания задания
+///////////////////////////////////////////////////////////////
+
 #include "stdafx.h"
 #include "GameTask.h"
+#include "gameobject.h"
+#include "script_engine.h"
+#include "ai_space.h"
+#include "script_game_object.h"
+#include "script_space.h"
+#include "object_broker.h"
 #include "ui/xrXMLParser.h"
 #include "encyclopedia_article.h"
-#include "map_location.h"
-#include "map_manager.h"
 
-#include "level.h"
-#include "actor.h"
-#include "script_space.h"
-#include "script_engine.h"
-#include "script_engine.h"
-#include "script_callback_ex.h"
-#include "script_game_object.h"
-#include "ai_space.h"
-#include "alife_object_registry.h"
-#include "alife_simulator.h"
-#include "alife_story_registry.h"
-#include "game_object_space.h"
-#include "object_broker.h"
-
-
-ALife::_STORY_ID	story_id		(LPCSTR story_id);
-u16					storyId2GameId	(ALife::_STORY_ID);
-
-using namespace luabind;
-
-ALife::_STORY_ID	story_id	(LPCSTR story_id)
+TASK_DATA::TASK_DATA():task_id(NULL),receive_time(0),finish_time(0)
 {
-	int res=
-							(
-		object_cast<int>(
-			luabind::object(
-				luabind::get_globals(
-					ai().script_engine().lua()
-				)
-				["story_ids"]
-			)
-			[story_id]
-		)
-	);
-	return ALife::_STORY_ID(res);
 }
 
-u16 storyId2GameId	(ALife::_STORY_ID id)
+TASK_DATA::TASK_DATA(TASK_ID id, ALife::_TIME_ID time):task_id(id),receive_time(time),finish_time(0)
 {
-	if(ai().get_alife()){ 
-		return ai().alife().story_objects().object(id, false)->ID;
-	}else{
-		u32 cnt = Level().Objects.o_count();
-		for(u32 it=0;it<cnt;++it){
-			CObject* O = Level().Objects.o_get_by_iterator(it);
-			CGameObject* GO = smart_cast<CGameObject*>(O);
-			if(GO->story_id()==id)
-				return GO->ID();
-		}
-	return u16(-1);
-	}
+	if(!task_id.size()) return;
+	
+	CGameTask task;
+	task.Load(task_id);
+	states.resize(task.ObjectivesNum());
+	for(std::size_t i=0; i<states.size();i++)
+		states[i] = eTaskStateInProgress;
+};
+
+
+void TASK_DATA::load (IReader& stream)
+{
+	load_data(task_id, stream);
+	load_data(receive_time, stream);
+	load_data(finish_time, stream);
+	load_data(states, stream);
+}
+void TASK_DATA::save (IWriter& stream)
+{
+	save_data(task_id, stream);
+	save_data(receive_time, stream);
+	save_data(finish_time, stream);
+	save_data(states, stream);
+}
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+
+SGameTaskData::SGameTaskData ()
+{
+}
+SGameTaskData::~SGameTaskData ()
+{}
+
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+
+CGameTask::CGameTask		()
+{
 }
 
-CUIXml	g_gameTaskXml;
-bool	g_gameTaskXmlInited = false;
-
-CGameTask::CGameTask(const TASK_ID& id)
+CGameTask::~CGameTask		()
 {
-	m_ReceiveTime	= 0;
-	m_FinishTime	= 0;
-	m_Title			= NULL;
-	m_ID			= id;
-	Load			(id);
+}
+/*
+void CGameTask::Load	(TASK_ID str_id)
+{
+	Load	(id_to_index::IdToIndex(str_id));
+}
+*/
+void CGameTask::Load	(TASK_ID  id)
+{
+	m_TaskId = id;
+	inherited_shared::load_shared(m_TaskId, NULL);
 }
 
-void CGameTask::Load(const TASK_ID& id)
+
+void CGameTask::load_shared	(LPCSTR)
 {
-	if(!g_gameTaskXmlInited)
-		g_gameTaskXml.Init			(CONFIG_PATH, "gameplay", "game_tasks.xml");
-	XML_NODE* task_node				= g_gameTaskXml.NavigateToNodeWithAttribute("game_task","id",*id);
+//	const id_to_index::ITEM_DATA& item_data = *id_to_index::GetByIndex(m_TaskIndex);
+	const id_to_index::ITEM_DATA& item_data = *id_to_index::GetById(m_TaskId);
 
-	THROW3							(task_node, "game task id=", *id);
-	g_gameTaskXml.SetLocalRoot		(task_node);
-	m_Title							= g_gameTaskXml.Read(g_gameTaskXml.GetLocalRoot(), "title", 0, NULL);
-	int tag_num						= g_gameTaskXml.GetNodesNum(g_gameTaskXml.GetLocalRoot(),"objective");
+	CUIXml uiXml;
+	string_path xml_file_full;
+	strconcat	(xml_file_full, *shared_str(item_data.file_name), ".xml");
 
-	m_Objectives.clear		();
+	bool xml_result = uiXml.Init(CONFIG_PATH, GAME_PATH, xml_file_full);
+	THROW3(xml_result, "xml file not found", xml_file_full);
+
+	//loading from XML
+	XML_NODE* task_node = uiXml.NavigateToNode(id_to_index::tag_name, item_data.pos_in_file);
+	THROW3(task_node, "game task id=", *item_data.id);
+
+	int tag_num = uiXml.GetNodesNum(task_node, "objective");
+
+	data()->m_Objectives.clear		();
+	data()->m_Objectives.reserve	(tag_num);
+
+	data()->title = uiXml.Read(task_node, "title", 0, NULL);
+
 	for(int i=0; i<tag_num; i++)
 	{
-		XML_NODE*	l_root = NULL;
-		l_root							= g_gameTaskXml.NavigateToNode("objective",i); 
-		g_gameTaskXml.SetLocalRoot		(l_root);
-
-		m_Objectives.push_back			(SGameTaskObjective(this,i));
-		SGameTaskObjective&				objective = m_Objectives.back();
-
-
-		LPCSTR tag_text					= g_gameTaskXml.Read(l_root, "text", 0, NULL);
-		objective.description			= tag_text;
-		tag_text						= g_gameTaskXml.Read(l_root, "article", 0, NULL);
+		SGameTaskObjective objective;
+		LPCSTR tag_text = uiXml.Read(task_node, "objective:text", i, NULL);
+		objective.description = tag_text;
+		tag_text = uiXml.Read(task_node, "objective:article", i, NULL);
 		if(tag_text)
-			objective.article_id		= tag_text;
-
-		tag_text						= g_gameTaskXml.ReadAttrib(l_root, "key", NULL);
-		if(tag_text)
-			objective.article_key		= tag_text;
-
-		objective.icon_texture_name		= g_gameTaskXml.Read(g_gameTaskXml.GetLocalRoot(), "icon", 0, NULL);
-		if(objective.icon_texture_name.size()){
-			objective.icon_rect.x1			= g_gameTaskXml.ReadAttribFlt(l_root, "icon", 0, "x");
-			objective.icon_rect.y1			= g_gameTaskXml.ReadAttribFlt(l_root, "icon", 0, "y");
-			objective.icon_rect.x2			= g_gameTaskXml.ReadAttribFlt(l_root, "icon", 0, "width");
-			objective.icon_rect.y2			= g_gameTaskXml.ReadAttribFlt(l_root, "icon", 0, "height");
-		}
-
-		objective.map_location			= g_gameTaskXml.Read(l_root, "map_location_type", 0, NULL);
-		LPCSTR object_story_id			= g_gameTaskXml.Read(l_root, "object_story_id", 0, NULL);
-		LPCSTR ddd;
-		ddd								= g_gameTaskXml.Read(l_root, "map_location_hidden", 0, NULL);
-		if(ddd)
-			objective.def_location_enabled = false;
-
-		bool b1,b2;
-		b1								= (0==objective.map_location.size());
-		b2								= (NULL==object_story_id);
-		VERIFY3							(b1==b2,"incorrect task objective definition for: ",*objective.description);
-		
-		objective.object_id				= u16(-1);
-		objective.map_hint				= g_gameTaskXml.ReadAttrib(l_root, "map_location_type", 0, "hint", NULL);
-		if(object_story_id){
-			ALife::_STORY_ID _sid		= story_id(object_story_id);
-			objective.object_id			= storyId2GameId(_sid);
-		}
-
-
-//------infoportion_complete
-		int info_num					= g_gameTaskXml.GetNodesNum(l_root,"infoportion_complete");
-		objective.m_completeInfos.resize(info_num);
-		int j;
-		for(j=0; j<info_num; ++j)
-			objective.m_completeInfos[j]= g_gameTaskXml.Read(l_root, "infoportion_complete", j, NULL);
-
-//------infoportion_fail
-		info_num						= g_gameTaskXml.GetNodesNum(l_root,"infoportion_fail");
-		objective.m_failInfos.resize	(info_num);
-
-		for(j=0; j<info_num; ++j)
-			objective.m_failInfos[j]	= g_gameTaskXml.Read(l_root, "infoportion_fail", j, NULL);
-
-//------infoportion_set_complete
-		info_num						= g_gameTaskXml.GetNodesNum(l_root,"infoportion_set_complete");
-		objective.m_infos_on_complete.resize(info_num);
-		for(j=0; j<info_num; ++j)
-			objective.m_infos_on_complete[j]= g_gameTaskXml.Read(l_root, "infoportion_set_complete", j, NULL);
-
-//------infoportion_set_fail
-		info_num						= g_gameTaskXml.GetNodesNum(l_root,"infoportion_set_fail");
-		objective.m_infos_on_fail.resize(info_num);
-		for(j=0; j<info_num; ++j)
-			objective.m_infos_on_fail[j]= g_gameTaskXml.Read(l_root, "infoportion_set_fail", j, NULL);
-
-
-//------function_complete
-		LPCSTR		str;
-		bool functor_exists;
-		info_num						= g_gameTaskXml.GetNodesNum(l_root,"function_complete");
-		objective.m_complete_lua_functions.resize(info_num);
-		for(j=0; j<info_num; ++j){
-			str							= g_gameTaskXml.Read(l_root, "function_complete", j, NULL);
-			functor_exists				= ai().script_engine().functor(str ,objective.m_complete_lua_functions[j]);
-			THROW3						(functor_exists, "Cannot find script function described in task objective  ", str);
-		}
-
-
-//------function_fail
-		info_num						= g_gameTaskXml.GetNodesNum(l_root,"function_fail");
-		objective.m_fail_lua_functions.resize(info_num);
-		for(j=0; j<info_num; ++j){
-			str							= g_gameTaskXml.Read(l_root, "function_fail", j, NULL);
-			functor_exists				= ai().script_engine().functor(str ,objective.m_fail_lua_functions[j]);
-			THROW3						(functor_exists, "Cannot find script function described in task objective  ", str);
-		}
-
-//------function_on_complete
-		info_num						= g_gameTaskXml.GetNodesNum(l_root,"function_call_complete");
-		objective.m_lua_functions_on_complete.resize(info_num);
-		for(j=0; j<info_num; ++j){
-			str							= g_gameTaskXml.Read(l_root, "function_call_complete", j, NULL);
-			functor_exists				= ai().script_engine().functor(str ,objective.m_lua_functions_on_complete[j]);
-			THROW3						(functor_exists, "Cannot find script function described in task objective  ", str);
-		}
-
-
-//------function_on_fail
-		info_num						= g_gameTaskXml.GetNodesNum(l_root,"function_call_fail");
-		objective.m_lua_functions_on_fail.resize(info_num);
-		for(j=0; j<info_num; ++j){
-			str							= g_gameTaskXml.Read(l_root, "function_call_fail", j, NULL);
-			functor_exists				= ai().script_engine().functor(str ,objective.m_lua_functions_on_fail[j]);
-			THROW3						(functor_exists, "Cannot find script function described in task objective  ", str);
-		}
-
-		g_gameTaskXml.SetLocalRoot		(task_node);
-	}
-	g_gameTaskXml.SetLocalRoot		(g_gameTaskXml.GetRoot());
-/*
-//perform consistency check
-	SGameTaskObjective& root_obj		= Objective(0);
-	bool b_root_compl					= root_obj.m_completeInfos.size()	|| root_obj.m_complete_lua_functions.size();
-	bool b_root_fail					= root_obj.m_failInfos.size()		|| root_obj.m_fail_lua_functions.size();
-	VERIFY3								(b_root_compl==b_root_fail,*m_ID,"incorrect task definition");
-	
-	for(u32 i = 0; i<m_Objectives.size(); ++i)
-	{
-		SGameTaskObjective& sub_obj			= Objective(i);
-		bool b_compl						= sub_obj.m_completeInfos.size()	|| sub_obj.m_complete_lua_functions.size();
-		bool b_fail							= sub_obj.m_failInfos.size()		|| sub_obj.m_fail_lua_functions.size();
-		VERIFY3								(b_compl==b_fail,*m_ID,"incorrect task objective definition");
-		VERIFY3								((b_compl==b_root_compl)&&(b_root_fail==b_fail),*m_ID,"incorrect task objective definition");
-	}
-*/
-}
-
-bool CGameTask::HighlightedSpotOnMap(int objective_id)
-{
-	CMapLocation* ml = m_Objectives[objective_id].HasMapLocation();
-	return (ml && ml->PointerEnabled	());
-}
-
-void CGameTask::HighlightSpotOnMap(int objective_id, bool bHighlight)
-{
-	Level().MapManager().DisableAllPointers();
-	CMapLocation* ml = m_Objectives[objective_id].HasMapLocation();
-	
-	if(NULL==ml) return;
-
-	if(bHighlight)
-		ml->EnablePointer();
-	else
-		ml->DisablePointer();
-}
-
-bool CGameTask::HasMapLocations			()
-{
-	for(u32 i=0; i<m_Objectives.size(); ++i)
-		if(m_Objectives[i].HasMapLocation()!=NULL)return true;
-
-	return false;
-}
-
-void CGameTask::ShowLocations			(bool bShow)
-{
-	for(u32 i=0; i<m_Objectives.size(); ++i){
-		SGameTaskObjective& obj = 	m_Objectives[i];
-		CMapLocation* ml		= obj.HasMapLocation		();
-		if(NULL!=ml){
-			if(bShow)
-				ml->EnableSpot();
-			else
-				ml->DisableSpot();
-		}
+			objective.article_id = tag_text;
+		objective.icon_texture_name = uiXml.Read(task_node, "objective:icon", i, NULL);
+		objective.icon_x = uiXml.ReadAttribInt(task_node, "objective:icon", i, "x");
+		objective.icon_y = uiXml.ReadAttribInt(task_node, "objective:icon", i, "y");
+		objective.icon_width = uiXml.ReadAttribInt(task_node, "objective:icon", i, "width");
+		objective.icon_height = uiXml.ReadAttribInt(task_node, "objective:icon", i, "height");
+		data()->m_Objectives.push_back(objective);
 	}
 }
 
-bool CGameTask::ShownLocations			()
+void CGameTask::InitXmlIdToIndex()
 {
-	for(u32 i=0; i<m_Objectives.size(); ++i){
-		SGameTaskObjective& obj						= m_Objectives[i];
-		CMapLocation* ml  = obj.HasMapLocation		();
-		if(ml) return ml->SpotEnabled				();
-	}
-	return false;
+	if(!id_to_index::tag_name)
+		id_to_index::tag_name = "game_task";
+	if(!id_to_index::file_str)
+		id_to_index::file_str = pSettings->r_string("game_tasks", "files");
 }
 
-SGameTaskObjective::SGameTaskObjective		(CGameTask* parent, int _idx)
-:description		(NULL),
-article_id			(NULL),
-map_location		(NULL),
-object_id			(u16(-1)),
-task_state			(eTaskStateInProgress),
-def_location_enabled(true),
-parent				(parent),
-idx					(_idx)
+u32			CGameTask::ObjectivesNum	()
 {
-
+	return	data()->m_Objectives.size();
+}
+shared_str		CGameTask::ObjectiveDesc	(u32 index)
+{
+	return data()->m_Objectives[index].description;
 }
 
-CMapLocation* SGameTaskObjective::HasMapLocation		()
+ARTICLE_ID		CGameTask::ObjectiveArticle	(u32 index)
 {
-	if( map_location.size()==0) return NULL;
-	return Level().MapManager().GetMapLocation(map_location, object_id);
+	return data()->m_Objectives[index].article_id;
 }
 
-void SGameTaskObjective::SetTaskState		(ETaskState new_state)
+ETaskState	CGameTask::ObjectiveState  (u32 index)
 {
-	task_state = new_state;
-	if( (new_state==eTaskStateFail) || (new_state==eTaskStateCompleted) ){
-
-		if( task_state==eTaskStateFail ){
-				SendInfo				(m_infos_on_fail);
-				CallAllFuncs			(m_lua_functions_on_fail);
-		}else
-		if( task_state==eTaskStateCompleted ){
-				SendInfo				(m_infos_on_complete);
-				CallAllFuncs			(m_lua_functions_on_complete);
-		}
-		//callback for scripters
-		ChangeStateCallback(parent->m_ID, idx, new_state);
-	}
+	VERIFY(index<m_ObjectiveStates.size());
+	return m_ObjectiveStates[index];
 }
 
-ETaskState SGameTaskObjective::UpdateState	()
+void 	CGameTask::ObjectiveIcon  (u32 index, shared_str& tex_name, 
+								   int& x, int& y, int& width, int& height)
 {
-//check fail infos
-	if( CheckInfo(m_failInfos) )
-		return		eTaskStateFail;
-
-//check fail functor
-	if( CheckFunctions(m_fail_lua_functions) )
-		return		eTaskStateFail;
-	
-//check complete infos
-	if( CheckInfo(m_completeInfos) )
-		return		eTaskStateCompleted;
-
-
-//check complete functor
-	if( CheckFunctions(m_complete_lua_functions) )
-		return		eTaskStateCompleted;
-
-	
-	return TaskState();
+	VERIFY(index<m_ObjectiveStates.size());
+	tex_name = data()->m_Objectives[index].icon_texture_name;
+	x = data()->m_Objectives[index].icon_x;
+	y = data()->m_Objectives[index].icon_y;
+	width = data()->m_Objectives[index].icon_width;
+	height = data()->m_Objectives[index].icon_height;
 }
 
-void SGameTaskObjective::SendInfo		(xr_vector<shared_str>& v)
+
+void CGameTask::Init(const TASK_DATA& tast_data)
 {
-	xr_vector<shared_str>::iterator it	= v.begin();
-	for(;it!=v.end();++it)
-		Actor()->TransferInfo					((*it),true);
+	Load(tast_data.task_id);
+	m_ObjectiveStates = tast_data.states;
 
-}
+	m_ReceiveTime = tast_data.receive_time;
+	m_FinishTime = tast_data.finish_time;
 
-bool SGameTaskObjective::CheckInfo		(xr_vector<shared_str>& v)
-{
-	bool res = false;
-	xr_vector<shared_str>::iterator it	= v.begin();
-	for(;it!=v.end();++it){
-		res = Actor()->HasInfo					(*it);
-		if(!res) break;
-	}
-	return res;
-}
-
-bool SGameTaskObjective::CheckFunctions	(xr_vector<luabind::functor<bool> >& v)
-{
-	bool res = false;
-	xr_vector<luabind::functor<bool> >::iterator it	= v.begin();
-	for(;it!=v.end();++it){
-		if( (*it).is_valid() ) res = (*it)(*(parent->m_ID), idx);
-		if(!res) break;
-	}
-	return res;
-
-}
-
-void SGameTaskObjective::CallAllFuncs	(xr_vector<luabind::functor<bool> >& v)
-{
-	xr_vector<luabind::functor<bool> >::iterator it	= v.begin();
-	for(;it!=v.end();++it){
-		if( (*it).is_valid() ) (*it)(*(parent->m_ID), idx);
-	}
-}
-
-void ChangeStateCallback(shared_str& task_id, int obj_id, ETaskState state){
-
-	Actor()->callback(GameObject::eTaskStateChange)(*task_id, obj_id, state);
 }
